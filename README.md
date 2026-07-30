@@ -1,9 +1,8 @@
 <h1 align="center">Hi, I'm Vishnujan Narayanan</h1>
 
 <p align="center">
-  <b>Data engineering · web scraping · full-stack · DevOps &amp; cloud</b><br />
-  I build the crawlers and pipelines that produce data, the services that expose it,
-  and the infrastructure that keeps both running — with machine learning where it earns its place.
+  <b>I build models, the pipelines that feed them, and the services that serve them.</b><br />
+  Data engineering and web scraping, end to end — from crawler to database to deployed API.
 </p>
 
 <div align="center">
@@ -21,12 +20,14 @@
 
 ### About me
 
-- I build **data collection at scale** — headless browser crawlers behind job queues, with caching, retries, and schema-checked writes into Postgres.
-- I do the **data engineering** around it: ingesting from APIs and market feeds, reshaping it into something queryable, and scheduling the jobs that keep it fresh.
-- I ship it **full-stack** — REST APIs, background workers, WebSocket progress, and the React front-ends that make it usable.
-- I handle the **DevOps**: containerised services, CI that builds and deploys on push, and cloud storage and hosting behind it.
-- I use **machine learning** where it earns its place — classification and regression on tabular data, text, and images, including work on heavily imbalanced datasets and financial time series.
-- Reach me at **narayanan.vishnujan@gmail.com**
+I specialise in getting data out of places it doesn't want to leave, and turning it into something a product can use.
+
+- **Getting it** — headless browser crawlers behind job queues, with caching, retries, and schema-checked writes into Postgres.
+- **Moving it** — ingestion from APIs and market feeds, reshaped into queryable tables, on scheduled jobs that keep it fresh.
+- **Serving it** — REST APIs, background workers, and React front-ends, containerised with CI that deploys on push.
+- **Modelling it** — classification and regression on tabular data, text, and images, including heavily imbalanced datasets and financial time series.
+
+Reach me at **narayanan.vishnujan@gmail.com**
 
 ---
 
