@@ -1,8 +1,8 @@
 <h1 align="center">Hi, I'm Vishnujan Narayanan</h1>
 
 <p align="center">
-  <b>Aspiring Data Scientist</b> — building intelligent systems for real-world insights.<br />
-  Machine learning from scratch, quantitative trading research, and NLP pipelines.
+  <b>Aspiring Data Scientist</b><br />
+  Machine learning, financial time-series research, and large-scale data collection.
 </p>
 
 <div align="center">
@@ -20,10 +20,10 @@
 
 ### About me
 
-- I implement algorithms **from scratch** when that is the fastest way to actually understand them, and reach for scikit-learn, PyTorch or TensorFlow when the job is to ship something.
-- I work on **prediction and classification** across messy real-world data: financial markets, text, and images.
-- I build **browser automation and web scraping** systems that collect data at scale, and the queues, caching, and databases needed to keep them running.
-- I turn models into **working products** — APIs, backends, and web front-ends rather than notebooks that stop at a metric.
+- I train and evaluate **classification and regression models** on tabular data, text, and images — feature engineering, handling heavily imbalanced classes, and checking a result still holds outside the data it was fitted on.
+- I work with **financial time series**: assembling datasets from market data, testing signals against historical prices, and automating execution against exchange APIs.
+- I build **data collection at scale** — headless browser crawlers running behind job queues, with caching, retries, and a database to land the results in.
+- I ship what I build as **services rather than notebooks**: REST APIs, background workers, and web front-ends.
 - Reach me at **narayanan.vishnujan@gmail.com**
 
 ---
