@@ -1,8 +1,9 @@
 <h1 align="center">Hi, I'm Vishnujan Narayanan</h1>
 
 <p align="center">
-  <b>Machine learning, financial time-series research, and large-scale data collection.</b><br />
-  I build models, the pipelines that feed them, and the services that serve them.
+  <b>Data engineering · web scraping · full-stack · DevOps &amp; cloud</b><br />
+  I build the crawlers and pipelines that produce data, the services that expose it,
+  and the infrastructure that keeps both running — with machine learning where it earns its place.
 </p>
 
 <div align="center">
@@ -20,10 +21,11 @@
 
 ### About me
 
-- I train and evaluate **classification and regression models** on tabular data, text, and images — feature engineering, handling heavily imbalanced classes, and checking a result still holds outside the data it was fitted on.
-- I work with **financial time series**: assembling datasets from market data, testing signals against historical prices, and automating execution against exchange APIs.
-- I build **data collection at scale** — headless browser crawlers running behind job queues, with caching, retries, and a database to land the results in.
-- I ship what I build as **services rather than notebooks**: REST APIs, background workers, and web front-ends.
+- I build **data collection at scale** — headless browser crawlers behind job queues, with caching, retries, and schema-checked writes into Postgres.
+- I do the **data engineering** around it: ingesting from APIs and market feeds, reshaping it into something queryable, and scheduling the jobs that keep it fresh.
+- I ship it **full-stack** — REST APIs, background workers, WebSocket progress, and the React front-ends that make it usable.
+- I handle the **DevOps**: containerised services, CI that builds and deploys on push, and cloud storage and hosting behind it.
+- I use **machine learning** where it earns its place — classification and regression on tabular data, text, and images, including work on heavily imbalanced datasets and financial time series.
 - Reach me at **narayanan.vishnujan@gmail.com**
 
 ---
@@ -37,16 +39,6 @@
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
 ![SQL](https://img.shields.io/badge/SQL-4479A1?style=for-the-badge&logo=postgresql&logoColor=white)
 ![Bash](https://img.shields.io/badge/Bash-4EAA25?style=for-the-badge&logo=gnubash&logoColor=white)
-
-**Machine Learning & Data**
-
-![scikit-learn](https://img.shields.io/badge/scikit--learn-F7931E?style=for-the-badge&logo=scikitlearn&logoColor=white)
-![TensorFlow](https://img.shields.io/badge/TensorFlow-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white)
-![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)
-![NumPy](https://img.shields.io/badge/NumPy-013243?style=for-the-badge&logo=numpy&logoColor=white)
-![pandas](https://img.shields.io/badge/pandas-150458?style=for-the-badge&logo=pandas&logoColor=white)
-![Jupyter](https://img.shields.io/badge/Jupyter-F37626?style=for-the-badge&logo=jupyter&logoColor=white)
-![Tableau](https://img.shields.io/badge/Tableau-E97627?style=for-the-badge&logo=tableau&logoColor=white)
 
 **Backend & Frontend**
 
@@ -70,6 +62,16 @@
 ![Git](https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=git&logoColor=white)
 ![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)
+
+**Machine Learning & Data**
+
+![scikit-learn](https://img.shields.io/badge/scikit--learn-F7931E?style=for-the-badge&logo=scikitlearn&logoColor=white)
+![TensorFlow](https://img.shields.io/badge/TensorFlow-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white)
+![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)
+![NumPy](https://img.shields.io/badge/NumPy-013243?style=for-the-badge&logo=numpy&logoColor=white)
+![pandas](https://img.shields.io/badge/pandas-150458?style=for-the-badge&logo=pandas&logoColor=white)
+![Jupyter](https://img.shields.io/badge/Jupyter-F37626?style=for-the-badge&logo=jupyter&logoColor=white)
+![Tableau](https://img.shields.io/badge/Tableau-E97627?style=for-the-badge&logo=tableau&logoColor=white)
 
 ---
 
