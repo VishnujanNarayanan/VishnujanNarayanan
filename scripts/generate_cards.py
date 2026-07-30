@@ -20,6 +20,7 @@ import random
 import subprocess
 import sys
 import urllib.request
+from collections import deque
 from pathlib import Path
 
 USER = sys.argv[1] if len(sys.argv) > 1 else "VishnujanNarayanan"
@@ -83,10 +84,11 @@ MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
           "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 # Snake animation.
-SNAKE_STEP_SECONDS = 0.03    # one grid step per frame
+SNAKE_STEP_SECONDS = 0.05    # one grid step per frame
 SNAKE_LENGTH = 4             # starting length, and the length it returns to
 GROW_PER_CELLS = 10          # cells swallowed per extra body segment
 DETOUR_CHANCE = 0.25         # how often the head wanders off the direct line
+RESPAWN_SPAN = 0.55          # refill span, as a fraction of the eat phase
 HUNT_SEED = 7                # fixed, so output only changes with the data
 
 
@@ -227,63 +229,115 @@ def heat_index(count: int, cuts: tuple[int, int, int]) -> int:
     return 4
 
 
-def hunt(cols: int, alive: set[tuple[int, int]]) -> tuple[list, dict]:
-    """Walk a snake that hunts contribution cells, then keeps roaming.
+def hunt(cols: int, alive: set[tuple[int, int]]) -> dict:
+    """Simulate a snake that clears the board, then retraces itself.
 
-    The head steps one cell at a time toward the nearest remaining cell, but
-    takes a random turn `DETOUR_CHANCE` of the time, so the route reads as a
-    snake with a purpose rather than either a rigid sweep or a drunk walk.
-    Reversing straight back on itself is disallowed, which is what stops the
-    body from folding through its own neck.
+    Phase one: the head steps toward the nearest remaining cell, taking a random
+    turn `DETOUR_CHANCE` of the time, so the route has purpose without being a
+    rigid sweep. It never steps onto its own body -- only the tail cell is
+    allowed, since that square is vacated on the same frame.
 
-    Returns the head positions per frame and the frame each cell was eaten.
+    Phase two: cells respawn in the reverse of the order they were eaten, so the
+    board refills back along the path the snake just traced, and the snake gives
+    up a segment for every `GROW_PER_CELLS` cells returned.
+
     Seeded, so the animation only changes when the contribution data does.
     """
     rng = random.Random(HUNT_SEED)
     remaining = set(alive)
-    # Start on the emptiest edge so the first frames are not instantly eating.
     head = (0, 3)
     path = [head]
     eaten_at: dict[tuple[int, int], int] = {}
-    prev = None
+    body = deque([head])          # head first, tail last
+    occupied = {head}
+    lengths = [SNAKE_LENGTH]      # the body length actually enforced per frame
 
-    def options(pos):
+    def neighbours(pos):
         x, y = pos
-        cand = [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
-        return [(a, b) for a, b in cand if 0 <= a < cols and 0 <= b < 7
-                and (a, b) != prev]
+        return [(a, b) for a, b in
+                ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1))
+                if 0 <= a < cols and 0 <= b < 7]
 
-    # Frame budget: enough to clear the board without spinning forever if the
-    # walk somehow stalls.
-    while remaining and len(path) < cols * 7 * 6:
-        moves = options(head) or [head]
-        if rng.random() < DETOUR_CHANCE:
-            nxt = rng.choice(moves)
-        else:
-            tx, ty = min(remaining,
-                         key=lambda c: abs(c[0] - head[0]) + abs(c[1] - head[1]))
-            nxt = min(moves, key=lambda m: abs(m[0] - tx) + abs(m[1] - ty))
-        prev, head = head, nxt
+    def room(start, blocked, cap):
+        """Free cells reachable from `start`, counted up to `cap`.
+
+        Greedy hunting will happily walk into a pocket it cannot get out of,
+        which is the only way this snake ever collides. Rejecting moves whose
+        reachable space is smaller than the body avoids the trap in the first
+        place, rather than handling the crash afterwards.
+        """
+        seen = {start}
+        stack = [start]
+        while stack and len(seen) < cap:
+            for n in neighbours(stack.pop()):
+                if n not in seen and n not in blocked:
+                    seen.add(n)
+                    stack.append(n)
+        return len(seen)
+
+    def step(target):
+        """Pick the next cell, preferring progress toward `target`."""
+        cand = neighbours(head)
+        # The tail vacates as we advance, so treat it as free; everything else
+        # in the body is a collision.
+        tail = body[-1]
+        free = [c for c in cand if c not in occupied or c == tail]
+        if not free:
+            # Boxed in anyway. Step onto the oldest body cell available, which
+            # clears soonest, so any overlap is as brief as possible.
+            order = {c: i for i, c in enumerate(body)}
+            return max(cand, key=lambda c: order.get(c, -1)) if cand else head
+
+        need = len(body) + 1
+        after = (occupied - {tail})
+        roomy = [c for c in free if room(c, after - {c}, need) >= need]
+        pick = roomy or free
+
+        if target is None or rng.random() < DETOUR_CHANCE:
+            return rng.choice(pick)
+        return min(pick, key=lambda m: abs(m[0] - target[0]) + abs(m[1] - target[1]))
+
+    def advance(nxt, length):
+        nonlocal head
+        head = nxt
         path.append(head)
+        body.appendleft(head)
+        while len(body) > length:
+            occupied.discard(body.pop())
+        occupied.add(head)
+        lengths.append(len(body))
+
+    length = SNAKE_LENGTH
+    while remaining and len(path) < cols * 7 * 6:
+        target = min(remaining,
+                     key=lambda c: abs(c[0] - head[0]) + abs(c[1] - head[1]))
+        advance(step(target), length)
         if head in remaining:
             remaining.discard(head)
             eaten_at[head] = len(path) - 1
+            length = SNAKE_LENGTH + len(eaten_at) // GROW_PER_CELLS
 
-    # Roam for a second phase of equal length while the board spits cells back.
+    # Respawn schedule: reverse eat order, spread over its own span so the
+    # refill reads as the snake unwinding rather than dragging the loop out.
+    order = sorted(eaten_at, key=eaten_at.get)
     phase = max(eaten_at.values()) if eaten_at else 1
-    while len(path) < phase * 2:
-        moves = options(head) or [head]
-        # Mild forward bias keeps the roam from looking like jitter.
-        if prev and rng.random() < 0.6:
-            dx, dy = head[0] - prev[0], head[1] - prev[1]
-            ahead = (head[0] + dx, head[1] + dy)
-            nxt = ahead if ahead in moves else rng.choice(moves)
-        else:
-            nxt = rng.choice(moves)
-        prev, head = head, nxt
-        path.append(head)
+    span = max(1, int(phase * RESPAWN_SPAN))
+    total = phase + span
+    respawn_at = {
+        c: phase + round((len(order) - 1 - i) * span / max(1, len(order)))
+        for i, c in enumerate(order)
+    }
 
-    return path, eaten_at
+    returned = sorted(respawn_at.values())
+    while len(path) < total:
+        f = len(path)
+        shrunk = bisect.bisect_right(returned, f) // GROW_PER_CELLS
+        advance(step(None), max(SNAKE_LENGTH,
+                                SNAKE_LENGTH + len(eaten_at) // GROW_PER_CELLS
+                                - shrunk))
+
+    return {"path": path, "eaten_at": eaten_at, "respawn_at": respawn_at,
+            "frames": total, "lengths": lengths}
 
 
 def contributions_card(d: dict, theme: str) -> str:
@@ -354,26 +408,32 @@ def contributions_card(d: dict, theme: str) -> str:
              for wi, w in enumerate(weeks)
              for day in w["contributionDays"]
              if day["contributionCount"] > 0}
-    path, eaten_at = hunt(len(weeks), alive)
-
-    # Every cell respawns exactly `phase` frames after it was swallowed, which
-    # makes the dead window identical for each one. That is what lets a single
-    # set of CSS keyframes drive all of them, with a per-cell negative delay
-    # setting the phase -- otherwise each cell would need its own @keyframes.
-    phase = max(eaten_at.values())
-    frames = phase * 2
+    sim = hunt(len(weeks), alive)
+    path, eaten_at = sim["path"], sim["eaten_at"]
+    respawn_at, frames = sim["respawn_at"], sim["frames"]
     period = round(frames * SNAKE_STEP_SECONDS, 2)
 
-    s.append(
-        "<style>"
-        "@keyframes eat{"
-        f'0%{{fill:var(--a)}}0.4%{{fill:{t["heat"][0]}}}'
-        f'50%{{fill:{t["heat"][0]}}}50.4%{{fill:var(--a)}}100%{{fill:var(--a)}}'
-        "}"
-        f".e{{animation:eat {period}s linear infinite}}"
+    # Because cells now respawn in reverse order, the dead window differs per
+    # cell, so they cannot share one set of keyframes offset by a delay. Each
+    # cell gets its own rule instead -- still cheap, and it keeps the whole
+    # animation in CSS so prefers-reduced-motion can switch it off.
+    rules = [f".e{{animation-duration:{period}s;animation-timing-function:step-end;"
+             "animation-iteration-count:infinite}"]
+    dead = t["heat"][0]
+    cell_class: dict[tuple[int, int], str] = {}
+    for i, (pos, gone) in enumerate(sorted(eaten_at.items(), key=lambda kv: kv[1])):
+        back = respawn_at[pos]
+        a = gone / frames * 100
+        b = min(99.9, back / frames * 100)
+        cell_class[pos] = f"k{i}"
+        rules.append(
+            f"@keyframes k{i}{{0%{{fill:var(--a)}}{a:.2f}%{{fill:{dead}}}"
+            f"{b:.2f}%{{fill:var(--a)}}}}.k{i}{{animation-name:k{i}}}"
+        )
+    rules.append(
         "@media(prefers-reduced-motion:reduce){.e{animation:none}.sn{display:none}}"
-        "</style>"
     )
+    s.append("<style>" + "".join(rules) + "</style>")
 
     for wi, w in enumerate(weeks):
         for day in w["contributionDays"]:
@@ -384,9 +444,8 @@ def contributions_card(d: dict, theme: str) -> str:
             plural = "" if n == 1 else "s"
             extra = ""
             if n > 0:
-                lag = period - eaten_at[(wi, day["weekday"])] * SNAKE_STEP_SECONDS
-                extra = (f' class="e" style="--a:{fill};'
-                         f'animation-delay:-{lag:.2f}s"')
+                extra = (f' class="e {cell_class[(wi, day["weekday"])]}"'
+                         f' style="--a:{fill}"')
             s.append(
                 f'<rect x="{x}" y="{y}" width="{cell}" height="{cell}" rx="2" '
                 f'fill="{fill}"{extra}><title>{n} contribution{plural} on '
@@ -396,14 +455,9 @@ def contributions_card(d: dict, theme: str) -> str:
     # Length over time: one segment per GROW_PER_CELLS swallowed, released again
     # as those cells respawn, so the snake is back to its starting size exactly
     # when the board is full again and the loop can repeat seamlessly.
-    eat_frames = sorted(eaten_at.values())
-    lengths = []
-    for f in range(frames):
-        swallowed = bisect.bisect_right(eat_frames, f)
-        respawned = bisect.bisect_right(eat_frames, f - phase)
-        lengths.append(SNAKE_LENGTH
-                       + swallowed // GROW_PER_CELLS
-                       - respawned // GROW_PER_CELLS)
+    # Taken straight from the simulation: the drawn body must be the same body
+    # that was collision-checked, or the snake appears to cross itself.
+    lengths = sim["lengths"][:frames]
     longest_snake = max(lengths)
 
     # Segments live in a scaled group so each frame's coordinate is a small grid

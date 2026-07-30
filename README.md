@@ -1,4 +1,4 @@
-<h1 align="center">Hi, I'm Vishnujan Narayanan</h1>
+<h1 align="center">Hi 👋 I'm Vishnujan Narayanan</h1>
 
 <p align="center">
   <b>I build models, the pipelines that feed them, and the services that serve them.</b><br />
