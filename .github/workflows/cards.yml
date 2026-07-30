@@ -1,0 +1,45 @@
+name: Refresh profile cards
+
+on:
+  schedule:
+    # Every day at 01:00 UTC
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - scripts/generate_cards.py
+      - .github/workflows/cards.yml
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Generate cards
+        env:
+          # The default GITHUB_TOKEN can read public contribution data. To also
+          # count private contributions, create a fine-grained or classic PAT
+          # with read access to your profile and store it as secret CARDS_TOKEN.
+          GITHUB_TOKEN: ${{ secrets.CARDS_TOKEN || secrets.GITHUB_TOKEN }}
+        run: python3 scripts/generate_cards.py ${{ github.repository_owner }}
+
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets
+          if git diff --staged --quiet; then
+            echo "No card changes."
+          else
+            git commit -m "chore: refresh profile cards"
+            git push
+          fi
