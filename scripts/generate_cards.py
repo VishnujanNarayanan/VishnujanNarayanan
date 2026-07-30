@@ -88,7 +88,7 @@ SNAKE_STEP_SECONDS = 0.05    # one grid step per frame
 SNAKE_LENGTH = 4             # starting length, and the length it returns to
 GROW_PER_CELLS = 10          # cells swallowed per extra body segment
 DETOUR_CHANCE = 0.25         # how often the head wanders off the direct line
-RESPAWN_SPAN = 0.55          # refill span, as a fraction of the eat phase
+SOW_DETOUR_CHANCE = 0.12     # tighter wandering on the respawn tour
 HUNT_SEED = 7                # fixed, so output only changes with the data
 
 
@@ -275,7 +275,7 @@ def hunt(cols: int, alive: set[tuple[int, int]]) -> dict:
                     stack.append(n)
         return len(seen)
 
-    def step(target):
+    def step(target, detour=DETOUR_CHANCE):
         """Pick the next cell, preferring progress toward `target`."""
         cand = neighbours(head)
         # The tail vacates as we advance, so treat it as free; everything else
@@ -293,7 +293,7 @@ def hunt(cols: int, alive: set[tuple[int, int]]) -> dict:
         roomy = [c for c in free if room(c, after - {c}, need) >= need]
         pick = roomy or free
 
-        if target is None or rng.random() < DETOUR_CHANCE:
+        if target is None or rng.random() < detour:
             return rng.choice(pick)
         return min(pick, key=lambda m: abs(m[0] - target[0]) + abs(m[1] - target[1]))
 
@@ -317,27 +317,33 @@ def hunt(cols: int, alive: set[tuple[int, int]]) -> dict:
             eaten_at[head] = len(path) - 1
             length = SNAKE_LENGTH + len(eaten_at) // GROW_PER_CELLS
 
-    # Respawn schedule: reverse eat order, spread over its own span so the
-    # refill reads as the snake unwinding rather than dragging the loop out.
-    order = sorted(eaten_at, key=eaten_at.get)
-    phase = max(eaten_at.values()) if eaten_at else 1
-    span = max(1, int(phase * RESPAWN_SPAN))
-    total = phase + span
-    respawn_at = {
-        c: phase + round((len(order) - 1 - i) * span / max(1, len(order)))
-        for i, c in enumerate(order)
-    }
+    # Phase two: a second tour over the same cells. A cell reappears on the
+    # frame the *tail* clears it, so the snake sows the board back in behind
+    # itself -- which is why the respawn frame is the head's arrival plus the
+    # current body length, the point at which the body no longer covers it.
+    swallowed = len(eaten_at)
+    to_sow = set(eaten_at)
+    respawn_at: dict[tuple[int, int], int] = {}
+    due: dict[int, int] = {}
+    returned = 0
 
-    returned = sorted(respawn_at.values())
-    while len(path) < total:
+    while to_sow or len(path) <= max(respawn_at.values(), default=0):
         f = len(path)
-        shrunk = bisect.bisect_right(returned, f) // GROW_PER_CELLS
-        advance(step(None), max(SNAKE_LENGTH,
-                                SNAKE_LENGTH + len(eaten_at) // GROW_PER_CELLS
-                                - shrunk))
+        returned += due.pop(f, 0)
+        length = max(SNAKE_LENGTH,
+                     SNAKE_LENGTH + swallowed // GROW_PER_CELLS
+                     - returned // GROW_PER_CELLS)
+        target = (min(to_sow, key=lambda c: abs(c[0] - head[0]) + abs(c[1] - head[1]))
+                  if to_sow else None)
+        advance(step(target, SOW_DETOUR_CHANCE), length)
+        if head in to_sow:
+            to_sow.discard(head)
+            clear = f + length
+            respawn_at[head] = clear
+            due[clear] = due.get(clear, 0) + 1
 
     return {"path": path, "eaten_at": eaten_at, "respawn_at": respawn_at,
-            "frames": total, "lengths": lengths}
+            "frames": len(path), "lengths": lengths}
 
 
 def contributions_card(d: dict, theme: str) -> str:
