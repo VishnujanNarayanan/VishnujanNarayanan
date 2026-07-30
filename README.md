@@ -9,21 +9,27 @@
 
   [![Portfolio Badge](https://img.shields.io/badge/Portfolio-3b5998?style=for-the-badge&logo=google-chrome&logoColor=white)](https://github.com/VishnujanNarayanan/portfolio)
   [![Gmail Badge](https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:narayanan.vishnujan@gmail.com)
-  <!-- Add your real handles here, then uncomment:
-  [![LinkedIn Badge](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/YOUR_HANDLE/)
-  [![X Badge](https://img.shields.io/badge/X-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/YOUR_HANDLE)
-  [![Kaggle Badge](https://img.shields.io/badge/Kaggle-20BEFF?style=for-the-badge&logo=kaggle&logoColor=white)](https://kaggle.com/YOUR_HANDLE)
-  -->
-  <br />
+
   [![Profile Views](https://komarev.com/ghpvc/?username=VishnujanNarayanan&label=Profile%20views&color=0e75b6&style=for-the-badge)](https://github.com/VishnujanNarayanan)
   [![Repos](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.github.com%2Fusers%2FVishnujanNarayanan&query=%24.public_repos&label=Public%20repos&color=0e75b6&style=for-the-badge&logo=github)](https://github.com/VishnujanNarayanan?tab=repositories)
 
-  <!-- Wakatime: create an account at https://wakatime.com, install the editor plugin,
-       then grab your badge URL from https://wakatime.com/settings/profile and uncomment:
-  [![Wakatime](https://wakatime.com/badge/user/YOUR-WAKATIME-UUID.svg?style=for-the-badge)](https://wakatime.com/@YOUR-WAKATIME-UUID)
-  -->
-
 </div>
+
+<!-- OPTIONAL EXTRAS — fill in the placeholders and move these lines up into the
+     <div align="center"> block above. Keep a blank line between this comment and
+     any markdown you paste, otherwise GitHub treats the badges as raw HTML and
+     prints the link syntax as plain text instead of rendering the images.
+
+  [![LinkedIn Badge](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/YOUR_HANDLE/)
+  [![X Badge](https://img.shields.io/badge/X-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/YOUR_HANDLE)
+  [![Kaggle Badge](https://img.shields.io/badge/Kaggle-20BEFF?style=for-the-badge&logo=kaggle&logoColor=white)](https://kaggle.com/YOUR_HANDLE)
+
+  Wakatime: sign up at https://wakatime.com, install the editor plugin, then take
+  your badge URL from https://wakatime.com/settings/profile
+
+  [![Wakatime](https://wakatime.com/badge/user/YOUR-WAKATIME-UUID.svg?style=for-the-badge)](https://wakatime.com/@YOUR-WAKATIME-UUID)
+-->
+
 
 ---
 
@@ -69,17 +75,6 @@
 
 ---
 
-### 📊 GitHub Stats
-
-<div align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/stats-dark.svg" />
-    <img alt="GitHub statistics" src="assets/stats.svg" width="100%" />
-  </picture>
-</div>
-
----
-
 ### 📈 Contribution History
 
 <div align="center">
@@ -98,7 +93,7 @@
 
 </div>
 
-> The cards above are generated from the GitHub API by [`scripts/generate_cards.py`](scripts/generate_cards.py)
+> The heatmap above is generated from the GitHub API by [`scripts/generate_cards.py`](scripts/generate_cards.py)
 > and refreshed daily by [`.github/workflows/cards.yml`](.github/workflows/cards.yml) — no third-party
 > image service to go offline. The snake comes from `.github/workflows/snake.yml` and appears after its first run.
 
