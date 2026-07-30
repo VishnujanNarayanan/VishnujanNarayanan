@@ -84,11 +84,13 @@ MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
           "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 # Snake animation.
-SNAKE_STEP_SECONDS = 0.05    # one grid step per frame
+SNAKE_STEP_SECONDS = 0.04    # one grid step per frame
 SNAKE_LENGTH = 4             # starting length, and the length it returns to
-GROW_PER_CELLS = 10          # cells swallowed per extra body segment
+GROW_PER_CELLS = 12          # cells swallowed per extra body segment
+SHRINK_PER_CELLS = 3         # cells sown per segment released, on the way back
 DETOUR_CHANCE = 0.25         # how often the head wanders off the direct line
 SOW_DETOUR_CHANCE = 0.12     # tighter wandering on the respawn tour
+FAR_TARGET_CHANCE = 0.1      # share of targets picked from the far half
 HUNT_SEED = 7                # fixed, so output only changes with the data
 
 
@@ -230,16 +232,21 @@ def heat_index(count: int, cuts: tuple[int, int, int]) -> int:
 
 
 def hunt(cols: int, alive: set[tuple[int, int]]) -> dict:
-    """Simulate a snake that clears the board, then retraces itself.
+    """Simulate a snake that clears the board, then sows it back.
 
-    Phase one: the head steps toward the nearest remaining cell, taking a random
-    turn `DETOUR_CHANCE` of the time, so the route has purpose without being a
-    rigid sweep. It never steps onto its own body -- only the tail cell is
-    allowed, since that square is vacated on the same frame.
+    Phase one eats every contribution cell; phase two tours them again and each
+    reappears as the tail clears it. The head never steps onto its own body --
+    only the tail cell, which is vacated on the same frame -- and a flood-fill
+    check keeps it out of pockets it could not escape.
 
-    Phase two: cells respawn in the reverse of the order they were eaten, so the
-    board refills back along the path the snake just traced, and the snake gives
-    up a segment for every `GROW_PER_CELLS` cells returned.
+    Targets are held until reached rather than recomputed every frame, and
+    `FAR_TARGET_CHANCE` of them are picked at random from anywhere on the board
+    instead of nearest-first. Always chasing the nearest cell makes the snake
+    exhaust one region before grudgingly moving on; committing to an occasional
+    distant target is what sends it across the whole board.
+
+    The route closes: it finishes adjacent to where it started, so the renderer
+    can index the path modulo its length and the loop carries no seam.
 
     Seeded, so the animation only changes when the contribution data does.
     """
@@ -307,10 +314,24 @@ def hunt(cols: int, alive: set[tuple[int, int]]) -> dict:
         occupied.add(head)
         lengths.append(len(body))
 
+    def aim(pool, current):
+        """Hold a target until it is gone; sometimes commit to a distant one."""
+        if current in pool:
+            return current
+        if not pool:
+            return None
+        if rng.random() < FAR_TARGET_CHANCE:
+            # Bias toward the far half of the board so the snake actually
+            # crosses it rather than nibbling whatever is next door.
+            ranked = sorted(pool, key=lambda c: -(abs(c[0] - head[0])
+                                                  + abs(c[1] - head[1])))
+            return rng.choice(ranked[:max(1, len(ranked) // 2)])
+        return min(pool, key=lambda c: abs(c[0] - head[0]) + abs(c[1] - head[1]))
+
     length = SNAKE_LENGTH
+    target = None
     while remaining and len(path) < cols * 7 * 6:
-        target = min(remaining,
-                     key=lambda c: abs(c[0] - head[0]) + abs(c[1] - head[1]))
+        target = aim(remaining, target)
         advance(step(target), length)
         if head in remaining:
             remaining.discard(head)
@@ -327,14 +348,18 @@ def hunt(cols: int, alive: set[tuple[int, int]]) -> dict:
     due: dict[int, int] = {}
     returned = 0
 
+    target = None
     while to_sow or len(path) <= max(respawn_at.values(), default=0):
         f = len(path)
         returned += due.pop(f, 0)
+        # Shed length faster than it was gained. A cell reappears as the tail
+        # clears it, so a long body puts the new dot far behind the head -- the
+        # eye follows the head and reads that as the dot landing somewhere
+        # unrelated. Getting short early keeps the dot right behind the snake.
         length = max(SNAKE_LENGTH,
                      SNAKE_LENGTH + swallowed // GROW_PER_CELLS
-                     - returned // GROW_PER_CELLS)
-        target = (min(to_sow, key=lambda c: abs(c[0] - head[0]) + abs(c[1] - head[1]))
-                  if to_sow else None)
+                     - returned // SHRINK_PER_CELLS)
+        target = aim(to_sow, target)
         advance(step(target, SOW_DETOUR_CHANCE), length)
         if head in to_sow:
             to_sow.discard(head)
@@ -342,8 +367,31 @@ def hunt(cols: int, alive: set[tuple[int, int]]) -> dict:
             respawn_at[head] = clear
             due[clear] = due.get(clear, 0) + 1
 
+    # Close the loop: walk home until the head sits one cell from where it
+    # began, so restarting is a single legal step instead of a teleport. The
+    # renderer indexes the path modulo its length, so the body wraps too.
+    start = path[0]
+    guard = cols * 7 * 2
+    while head not in neighbours(start) and guard > 0:
+        advance(step(start), SNAKE_LENGTH)
+        guard -= 1
+
+    # The homing walk and the wrapped body can both put the snake back over a
+    # cell exactly as it was due to reappear, which would pop it in underneath
+    # the body. Slide those few forward to the next clear frame.
+    frames = len(path)
+
+    def covered(cell, f):
+        return any(path[(f - k) % frames] == cell for k in range(lengths[f]))
+
+    for c, due_at in respawn_at.items():
+        f = due_at
+        while f < frames - 1 and covered(c, f):
+            f += 1
+        respawn_at[c] = f
+
     return {"path": path, "eaten_at": eaten_at, "respawn_at": respawn_at,
-            "frames": len(path), "lengths": lengths}
+            "frames": frames, "lengths": lengths}
 
 
 def contributions_card(d: dict, theme: str) -> str:
@@ -476,7 +524,10 @@ def contributions_card(d: dict, theme: str) -> str:
     for k in range(longest_snake):
         coords, shown = [], []
         for f in range(frames):
-            wi, r = path[max(0, f - k)]
+            # Modulo, not clamped: the route is a closed loop, so a segment
+            # trailing past frame 0 belongs at the end of the path, not piled
+            # up on the starting cell.
+            wi, r = path[(f - k) % frames]
             coords.append(f"{wi},{r}")
             shown.append("1" if k < lengths[f] else "0")
         if k == 0:
