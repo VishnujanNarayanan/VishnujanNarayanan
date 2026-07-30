@@ -12,9 +12,11 @@ Usage: python3 scripts/generate_cards.py [username]
 
 from __future__ import annotations
 
+import bisect
 import datetime as dt
 import json
 import os
+import random
 import subprocess
 import sys
 import urllib.request
@@ -80,9 +82,12 @@ THEMES = {
 MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
           "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
-# Snake animation: 371 cells at 0.06s is a ~22s loop, brisk but followable.
-SNAKE_STEP_SECONDS = 0.06
-SNAKE_LENGTH = 5
+# Snake animation.
+SNAKE_STEP_SECONDS = 0.03    # one grid step per frame
+SNAKE_LENGTH = 4             # starting length, and the length it returns to
+GROW_PER_CELLS = 10          # cells swallowed per extra body segment
+DETOUR_CHANCE = 0.25         # how often the head wanders off the direct line
+HUNT_SEED = 7                # fixed, so output only changes with the data
 
 
 def token() -> str:
@@ -222,6 +227,65 @@ def heat_index(count: int, cuts: tuple[int, int, int]) -> int:
     return 4
 
 
+def hunt(cols: int, alive: set[tuple[int, int]]) -> tuple[list, dict]:
+    """Walk a snake that hunts contribution cells, then keeps roaming.
+
+    The head steps one cell at a time toward the nearest remaining cell, but
+    takes a random turn `DETOUR_CHANCE` of the time, so the route reads as a
+    snake with a purpose rather than either a rigid sweep or a drunk walk.
+    Reversing straight back on itself is disallowed, which is what stops the
+    body from folding through its own neck.
+
+    Returns the head positions per frame and the frame each cell was eaten.
+    Seeded, so the animation only changes when the contribution data does.
+    """
+    rng = random.Random(HUNT_SEED)
+    remaining = set(alive)
+    # Start on the emptiest edge so the first frames are not instantly eating.
+    head = (0, 3)
+    path = [head]
+    eaten_at: dict[tuple[int, int], int] = {}
+    prev = None
+
+    def options(pos):
+        x, y = pos
+        cand = [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
+        return [(a, b) for a, b in cand if 0 <= a < cols and 0 <= b < 7
+                and (a, b) != prev]
+
+    # Frame budget: enough to clear the board without spinning forever if the
+    # walk somehow stalls.
+    while remaining and len(path) < cols * 7 * 6:
+        moves = options(head) or [head]
+        if rng.random() < DETOUR_CHANCE:
+            nxt = rng.choice(moves)
+        else:
+            tx, ty = min(remaining,
+                         key=lambda c: abs(c[0] - head[0]) + abs(c[1] - head[1]))
+            nxt = min(moves, key=lambda m: abs(m[0] - tx) + abs(m[1] - ty))
+        prev, head = head, nxt
+        path.append(head)
+        if head in remaining:
+            remaining.discard(head)
+            eaten_at[head] = len(path) - 1
+
+    # Roam for a second phase of equal length while the board spits cells back.
+    phase = max(eaten_at.values()) if eaten_at else 1
+    while len(path) < phase * 2:
+        moves = options(head) or [head]
+        # Mild forward bias keeps the roam from looking like jitter.
+        if prev and rng.random() < 0.6:
+            dx, dy = head[0] - prev[0], head[1] - prev[1]
+            ahead = (head[0] + dx, head[1] + dy)
+            nxt = ahead if ahead in moves else rng.choice(moves)
+        else:
+            nxt = rng.choice(moves)
+        prev, head = head, nxt
+        path.append(head)
+
+    return path, eaten_at
+
+
 def contributions_card(d: dict, theme: str) -> str:
     t = THEMES[theme]
     cell, gap = 11, 3
@@ -286,25 +350,25 @@ def contributions_card(d: dict, theme: str) -> str:
             f'fill="{t["muted"]}" font-size="9" text-anchor="end">{label}</text>'
         )
 
-    # The snake walks a serpentine route so it covers every cell exactly once:
-    # down one week-column, up the next. `arrival` maps a cell to the step at
-    # which the head reaches it, which drives that cell's eaten animation.
-    route: list[tuple[int, int]] = []
-    for wi in range(len(weeks)):
-        rows = range(7) if wi % 2 == 0 else range(6, -1, -1)
-        route.extend((wi, r) for r in rows)
-    steps = len(route)
-    arrival = {pos: i for i, pos in enumerate(route)}
-    period = round(steps * SNAKE_STEP_SECONDS, 2)
+    alive = {(wi, day["weekday"])
+             for wi, w in enumerate(weeks)
+             for day in w["contributionDays"]
+             if day["contributionCount"] > 0}
+    path, eaten_at = hunt(len(weeks), alive)
 
-    # A cell dies when the head arrives and regrows later in the loop, so the
-    # regrowth trails the snake instead of the whole grid popping back at once.
-    # The negative delay puts each cell at the right phase on first paint.
+    # Every cell respawns exactly `phase` frames after it was swallowed, which
+    # makes the dead window identical for each one. That is what lets a single
+    # set of CSS keyframes drive all of them, with a per-cell negative delay
+    # setting the phase -- otherwise each cell would need its own @keyframes.
+    phase = max(eaten_at.values())
+    frames = phase * 2
+    period = round(frames * SNAKE_STEP_SECONDS, 2)
+
     s.append(
         "<style>"
         "@keyframes eat{"
-        f'0%{{fill:var(--a)}}0.35%{{fill:{t["heat"][0]}}}'
-        f'55%{{fill:{t["heat"][0]}}}58%{{fill:var(--a)}}100%{{fill:var(--a)}}'
+        f'0%{{fill:var(--a)}}0.4%{{fill:{t["heat"][0]}}}'
+        f'50%{{fill:{t["heat"][0]}}}50.4%{{fill:var(--a)}}100%{{fill:var(--a)}}'
         "}"
         f".e{{animation:eat {period}s linear infinite}}"
         "@media(prefers-reduced-motion:reduce){.e{animation:none}.sn{display:none}}"
@@ -320,7 +384,7 @@ def contributions_card(d: dict, theme: str) -> str:
             plural = "" if n == 1 else "s"
             extra = ""
             if n > 0:
-                lag = period - arrival[(wi, day["weekday"])] * SNAKE_STEP_SECONDS
+                lag = period - eaten_at[(wi, day["weekday"])] * SNAKE_STEP_SECONDS
                 extra = (f' class="e" style="--a:{fill};'
                          f'animation-delay:-{lag:.2f}s"')
             s.append(
@@ -329,31 +393,57 @@ def contributions_card(d: dict, theme: str) -> str:
                 f'{day["date"]}</title></rect>'
             )
 
-    # Snake: head plus a trailing body. Each segment replays the same route a
-    # fixed number of steps behind the head, wrapping modulo the route length so
-    # the loop is seamless. One discrete animateTransform per segment keeps the
-    # file small -- a CSS keyframe per step would be thousands of rules.
-    for k in range(SNAKE_LENGTH):
-        coords = []
-        for i in range(steps):
-            wi, r = route[(i - k) % steps]
-            coords.append(f"{left + wi * step},{top + r * step}")
+    # Length over time: one segment per GROW_PER_CELLS swallowed, released again
+    # as those cells respawn, so the snake is back to its starting size exactly
+    # when the board is full again and the loop can repeat seamlessly.
+    eat_frames = sorted(eaten_at.values())
+    lengths = []
+    for f in range(frames):
+        swallowed = bisect.bisect_right(eat_frames, f)
+        respawned = bisect.bisect_right(eat_frames, f - phase)
+        lengths.append(SNAKE_LENGTH
+                       + swallowed // GROW_PER_CELLS
+                       - respawned // GROW_PER_CELLS)
+    longest_snake = max(lengths)
+
+    # Segments live in a scaled group so each frame's coordinate is a small grid
+    # index ("31,4") rather than a pixel pair ("456,78"). Across ~700 frames and
+    # a 20-odd segment body that roughly halves the file.
+    s.append(f'<g transform="translate({left} {top}) scale({step})">')
+    unit = f"{cell / step:.4f}"
+    radius = f"{3 / step:.4f}"
+
+    for k in range(longest_snake):
+        coords, shown = [], []
+        for f in range(frames):
+            wi, r = path[max(0, f - k)]
+            coords.append(f"{wi},{r}")
+            shown.append("1" if k < lengths[f] else "0")
         if k == 0:
-            fill, opacity = t["snake_head"], "1"
+            fill, base = t["snake_head"], 1.0
         else:
             fill = t["snake_body"]
-            opacity = f"{1 - k / (SNAKE_LENGTH + 1):.2f}"
+            # Taper along the body, with a floor so a long tail stays visible.
+            base = max(0.35, 1 - k / (longest_snake + 2))
+        # Only segments that come and go need the extra opacity track.
+        fade = ""
+        if "0" in shown:
+            fade = (f'<animate attributeName="opacity" calcMode="discrete" '
+                    f'dur="{period}s" repeatCount="indefinite" '
+                    f'values="{";".join(str(round(base * int(v), 2)) for v in shown)}"/>')
         s.append(
-            f'<rect class="sn" width="{cell}" height="{cell}" rx="3" '
-            f'fill="{fill}" opacity="{opacity}" '
+            f'<rect class="sn" width="{unit}" height="{unit}" rx="{radius}" '
+            f'fill="{fill}" opacity="{base if k < SNAKE_LENGTH else 0}" '
             # Static fallback position: without this, a renderer that ignores
             # SMIL stacks every segment at the card's top-left corner.
             f'transform="translate({coords[0].replace(",", " ")})">'
             f'<animateTransform attributeName="transform" type="translate" '
             f'calcMode="discrete" dur="{period}s" repeatCount="indefinite" '
-            f'values="{";".join(coords)}"/>'
+            f'values="{";".join(coords)}"/>{fade}'
             f"</rect>"
         )
+
+    s.append("</g>")
 
     ly = top + 7 * step + 22
     s.append(
