@@ -1,8 +1,8 @@
 <h1 align="center">Hi, I'm Vishnujan Narayanan</h1>
 
 <p align="center">
-  <b>Aspiring Data Scientist</b><br />
-  Machine learning, financial time-series research, and large-scale data collection.
+  <b>Machine learning, financial time-series research, and large-scale data collection.</b><br />
+  I build models, the pipelines that feed them, and the services that serve them.
 </p>
 
 <div align="center">
