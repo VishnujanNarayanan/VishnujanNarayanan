@@ -61,6 +61,8 @@ THEMES = {
         "border": "#d0d7de",
         "track": "#eaeef2",
         "heat": ["#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39"],
+        "snake_head": "#8250df",
+        "snake_body": "#a475f9",
     },
     "dark": {
         "text": "#c9d1d9",
@@ -70,11 +72,17 @@ THEMES = {
         "border": "#30363d",
         "track": "#21262d",
         "heat": ["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"],
+        "snake_head": "#bc8cff",
+        "snake_body": "#a371f7",
     },
 }
 
 MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
           "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+# Snake animation: 371 cells at 0.06s is a ~22s loop, brisk but followable.
+SNAKE_STEP_SECONDS = 0.06
+SNAKE_LENGTH = 5
 
 
 def token() -> str:
@@ -278,6 +286,31 @@ def contributions_card(d: dict, theme: str) -> str:
             f'fill="{t["muted"]}" font-size="9" text-anchor="end">{label}</text>'
         )
 
+    # The snake walks a serpentine route so it covers every cell exactly once:
+    # down one week-column, up the next. `arrival` maps a cell to the step at
+    # which the head reaches it, which drives that cell's eaten animation.
+    route: list[tuple[int, int]] = []
+    for wi in range(len(weeks)):
+        rows = range(7) if wi % 2 == 0 else range(6, -1, -1)
+        route.extend((wi, r) for r in rows)
+    steps = len(route)
+    arrival = {pos: i for i, pos in enumerate(route)}
+    period = round(steps * SNAKE_STEP_SECONDS, 2)
+
+    # A cell dies when the head arrives and regrows later in the loop, so the
+    # regrowth trails the snake instead of the whole grid popping back at once.
+    # The negative delay puts each cell at the right phase on first paint.
+    s.append(
+        "<style>"
+        "@keyframes eat{"
+        f'0%{{fill:var(--a)}}0.35%{{fill:{t["heat"][0]}}}'
+        f'55%{{fill:{t["heat"][0]}}}58%{{fill:var(--a)}}100%{{fill:var(--a)}}'
+        "}"
+        f".e{{animation:eat {period}s linear infinite}}"
+        "@media(prefers-reduced-motion:reduce){.e{animation:none}.sn{display:none}}"
+        "</style>"
+    )
+
     for wi, w in enumerate(weeks):
         for day in w["contributionDays"]:
             x = left + wi * step
@@ -285,11 +318,42 @@ def contributions_card(d: dict, theme: str) -> str:
             n = day["contributionCount"]
             fill = t["heat"][heat_index(n, cuts)]
             plural = "" if n == 1 else "s"
+            extra = ""
+            if n > 0:
+                lag = period - arrival[(wi, day["weekday"])] * SNAKE_STEP_SECONDS
+                extra = (f' class="e" style="--a:{fill};'
+                         f'animation-delay:-{lag:.2f}s"')
             s.append(
                 f'<rect x="{x}" y="{y}" width="{cell}" height="{cell}" rx="2" '
-                f'fill="{fill}"><title>{n} contribution{plural} on '
+                f'fill="{fill}"{extra}><title>{n} contribution{plural} on '
                 f'{day["date"]}</title></rect>'
             )
+
+    # Snake: head plus a trailing body. Each segment replays the same route a
+    # fixed number of steps behind the head, wrapping modulo the route length so
+    # the loop is seamless. One discrete animateTransform per segment keeps the
+    # file small -- a CSS keyframe per step would be thousands of rules.
+    for k in range(SNAKE_LENGTH):
+        coords = []
+        for i in range(steps):
+            wi, r = route[(i - k) % steps]
+            coords.append(f"{left + wi * step},{top + r * step}")
+        if k == 0:
+            fill, opacity = t["snake_head"], "1"
+        else:
+            fill = t["snake_body"]
+            opacity = f"{1 - k / (SNAKE_LENGTH + 1):.2f}"
+        s.append(
+            f'<rect class="sn" width="{cell}" height="{cell}" rx="3" '
+            f'fill="{fill}" opacity="{opacity}" '
+            # Static fallback position: without this, a renderer that ignores
+            # SMIL stacks every segment at the card's top-left corner.
+            f'transform="translate({coords[0].replace(",", " ")})">'
+            f'<animateTransform attributeName="transform" type="translate" '
+            f'calcMode="discrete" dur="{period}s" repeatCount="indefinite" '
+            f'values="{";".join(coords)}"/>'
+            f"</rect>"
+        )
 
     ly = top + 7 * step + 22
     s.append(

@@ -1,4 +1,4 @@
-<h1 align="center">Hi 👋 I'm Vishnujan Narayanan</h1>
+<h1 align="center">Hi, I'm Vishnujan Narayanan</h1>
 
 <p align="center">
   <b>Aspiring Data Scientist</b> — building intelligent systems for real-world insights.<br />
@@ -7,105 +7,115 @@
 
 <div align="center">
 
-  [![Portfolio Badge](https://img.shields.io/badge/Portfolio-3b5998?style=for-the-badge&logo=google-chrome&logoColor=white)](https://github.com/VishnujanNarayanan/portfolio)
-  [![Gmail Badge](https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:narayanan.vishnujan@gmail.com)
-
-  [![Profile Views](https://komarev.com/ghpvc/?username=VishnujanNarayanan&label=Profile%20views&color=0e75b6&style=for-the-badge)](https://github.com/VishnujanNarayanan)
-  [![Repos](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.github.com%2Fusers%2FVishnujanNarayanan&query=%24.public_repos&label=Public%20repos&color=0e75b6&style=for-the-badge&logo=github)](https://github.com/VishnujanNarayanan?tab=repositories)
+  <!-- shields.io no longer ships a LinkedIn icon, so the logo is inlined as a base64 data URI. -->
+  [![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0yMC40NDcgMjAuNDUyaC0zLjU1NHYtNS41NjljMC0xLjMyOC0uMDI3LTMuMDM3LTEuODUyLTMuMDM3LTEuODUzIDAtMi4xMzYgMS40NDUtMi4xMzYgMi45Mzl2NS42NjdIOS4zNTFWOWgzLjQxNHYxLjU2MWguMDQ2Yy40NzctLjkgMS42MzctMS44NSAzLjM3LTEuODUgMy42MDEgMCA0LjI2NyAyLjM3IDQuMjY3IDUuNDU1djYuMjg2ek01LjMzNyA3LjQzM2MtMS4xNDQgMC0yLjA2My0uOTI2LTIuMDYzLTIuMDY1IDAtMS4xMzguOTItMi4wNjMgMi4wNjMtMi4wNjMgMS4xNCAwIDIuMDY0LjkyNSAyLjA2NCAyLjA2MyAwIDEuMTM5LS45MjUgMi4wNjUtMi4wNjQgMi4wNjV6bTEuNzgyIDEzLjAxOUgzLjU1NVY5aDMuNTY0djExLjQ1MnpNMjIuMjI1IDBIMS43NzFDLjc5MiAwIDAgLjc3NCAwIDEuNzI5djIwLjU0MkMwIDIzLjIyNy43OTIgMjQgMS43NzEgMjRoMjAuNDUxQzIzLjIgMjQgMjQgMjMuMjI3IDI0IDIyLjI3MVYxLjcyOUMyNCAuNzc0IDIzLjIgMCAyMi4yMjIgMGguMDAzeiIvPjwvc3ZnPg%3D%3D&logoColor=white)](https://www.linkedin.com/in/vishnujan-narayanan)
+  [![Substack](https://img.shields.io/badge/Substack-FF6719?style=for-the-badge&logo=substack&logoColor=white)](https://substack.com/@vishnujannarayanan)
+  [![Portfolio](https://img.shields.io/badge/Portfolio-3b5998?style=for-the-badge&logo=google-chrome&logoColor=white)](https://github.com/VishnujanNarayanan/portfolio)
+  [![Email](https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:narayanan.vishnujan@gmail.com)
 
 </div>
 
-<!-- OPTIONAL EXTRAS — fill in the placeholders and move these lines up into the
-     <div align="center"> block above. Keep a blank line between this comment and
-     any markdown you paste, otherwise GitHub treats the badges as raw HTML and
-     prints the link syntax as plain text instead of rendering the images.
-
-  [![LinkedIn Badge](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/YOUR_HANDLE/)
-  [![X Badge](https://img.shields.io/badge/X-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/YOUR_HANDLE)
-  [![Kaggle Badge](https://img.shields.io/badge/Kaggle-20BEFF?style=for-the-badge&logo=kaggle&logoColor=white)](https://kaggle.com/YOUR_HANDLE)
-
-  Wakatime: sign up at https://wakatime.com, install the editor plugin, then take
-  your badge URL from https://wakatime.com/settings/profile
-
-  [![Wakatime](https://wakatime.com/badge/user/YOUR-WAKATIME-UUID.svg?style=for-the-badge)](https://wakatime.com/@YOUR-WAKATIME-UUID)
--->
-
 
 ---
 
-### 🧠 About me
+### About me
 
-- 🔬 I build **ML models from first principles** — linear regression and neural nets in pure NumPy, no framework shortcuts.
-- 📈 I research **quantitative trading**: trader-sentiment analysis against the Bitcoin Fear & Greed Index, multi-agent LLM trading frameworks, and futures bots.
-- 🕵️ I work on **applied classification** — fraud detection, support-ticket triage with NLP, age/gender image classification.
-- 🛠️ Currently exploring **LLM agents**, retrieval pipelines, and full-stack TypeScript to ship models as products.
-- 📫 Reach me at **narayanan.vishnujan@gmail.com**
+- I build **machine learning models from first principles** — writing the maths directly instead of calling a library, so I understand what the model is actually doing.
+- I work on **prediction and classification** across messy real-world data: financial markets, text, and images.
+- I build **browser automation and web scraping** systems that collect data at scale, and the queues, caching, and databases needed to keep them running.
+- I turn models into **working products** — APIs, backends, and web front-ends rather than notebooks that stop at a metric.
+- Reach me at **narayanan.vishnujan@gmail.com**
 
 ---
 
-### ⚙️ Tech Stack
+### Tech Stack
 
 **Languages**
 
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![SQL](https://img.shields.io/badge/SQL-4479A1?style=for-the-badge&logo=postgresql&logoColor=white)
-![R](https://img.shields.io/badge/R-276DC3?style=for-the-badge&logo=r&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
+![SQL](https://img.shields.io/badge/SQL-4479A1?style=for-the-badge&logo=postgresql&logoColor=white)
+![R](https://img.shields.io/badge/R-276DC3?style=for-the-badge&logo=r&logoColor=white)
 ![C++](https://img.shields.io/badge/C%2B%2B-00599C?style=for-the-badge&logo=cplusplus&logoColor=white)
+![Bash](https://img.shields.io/badge/Bash-4EAA25?style=for-the-badge&logo=gnubash&logoColor=white)
 
-**Data & ML**
+**Machine Learning**
 
-![NumPy](https://img.shields.io/badge/NumPy-013243?style=for-the-badge&logo=numpy&logoColor=white)
-![pandas](https://img.shields.io/badge/pandas-150458?style=for-the-badge&logo=pandas&logoColor=white)
 ![scikit-learn](https://img.shields.io/badge/scikit--learn-F7931E?style=for-the-badge&logo=scikitlearn&logoColor=white)
 ![TensorFlow](https://img.shields.io/badge/TensorFlow-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white)
-![Jupyter](https://img.shields.io/badge/Jupyter-F37626?style=for-the-badge&logo=jupyter&logoColor=white)
+![Keras](https://img.shields.io/badge/Keras-D00000?style=for-the-badge&logo=keras&logoColor=white)
+![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)
+![NumPy](https://img.shields.io/badge/NumPy-013243?style=for-the-badge&logo=numpy&logoColor=white)
+![spaCy](https://img.shields.io/badge/spaCy-09A3D5?style=for-the-badge&logo=spacy&logoColor=white)
+![NLTK](https://img.shields.io/badge/NLTK-154F5B?style=for-the-badge&logo=python&logoColor=white)
+
+**Data**
+
+![pandas](https://img.shields.io/badge/pandas-150458?style=for-the-badge&logo=pandas&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-FF4438?style=for-the-badge&logo=redis&logoColor=white)
 ![Matplotlib](https://img.shields.io/badge/Matplotlib-11557C?style=for-the-badge&logo=python&logoColor=white)
+![seaborn](https://img.shields.io/badge/seaborn-4C72B0?style=for-the-badge&logo=python&logoColor=white)
 ![Tableau](https://img.shields.io/badge/Tableau-E97627?style=for-the-badge&logo=tableau&logoColor=white)
 
-**Tools & Platforms**
+**APIs & Backend**
+
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![NestJS](https://img.shields.io/badge/NestJS-E0234E?style=for-the-badge&logo=nestjs&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-5FA04E?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)
+![Socket.IO](https://img.shields.io/badge/Socket.IO-010101?style=for-the-badge&logo=socketdotio&logoColor=white)
+![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-D71F00?style=for-the-badge&logo=sqlalchemy&logoColor=white)
+
+**Frontend**
+
+![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
+![React Native](https://img.shields.io/badge/React_Native-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+
+**Infrastructure & Deployment**
+
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)
+![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
+![Render](https://img.shields.io/badge/Render-46E3B7?style=for-the-badge&logo=render&logoColor=black)
+![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)
+
+**Tools**
 
 ![Git](https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=git&logoColor=white)
 ![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)
-![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)
-![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
-![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
-![Node.js](https://img.shields.io/badge/Node.js-5FA04E?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![Jupyter](https://img.shields.io/badge/Jupyter-F37626?style=for-the-badge&logo=jupyter&logoColor=white)
+![Playwright](https://img.shields.io/badge/Playwright-2EAD33?style=for-the-badge&logo=playwright&logoColor=white)
+![Selenium](https://img.shields.io/badge/Selenium-43B02A?style=for-the-badge&logo=selenium&logoColor=white)
 
 ---
 
-### 📈 Contribution History
+### Contribution History
 
 <div align="center">
 
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/contributions-dark.svg" />
-    <img alt="Contribution history heatmap" src="assets/contributions.svg" width="100%" />
-  </picture>
-
-  <br /><br />
-
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/VishnujanNarayanan/VishnujanNarayanan/output/snake-dark.svg" />
-    <img alt="Contribution snake" src="https://raw.githubusercontent.com/VishnujanNarayanan/VishnujanNarayanan/output/snake.svg" />
+    <img alt="Contribution history heatmap with animated snake" src="assets/contributions.svg" width="100%" />
   </picture>
 
 </div>
 
-> The heatmap above is generated from the GitHub API by [`scripts/generate_cards.py`](scripts/generate_cards.py)
-> and refreshed daily by [`.github/workflows/cards.yml`](.github/workflows/cards.yml) — no third-party
-> image service to go offline. The snake comes from `.github/workflows/snake.yml` and appears after its first run.
+> Generated from the GitHub API by [`scripts/generate_cards.py`](scripts/generate_cards.py) and refreshed
+> daily by [`.github/workflows/cards.yml`](.github/workflows/cards.yml) — no third-party image service to go offline.
 
 ---
 
-### 🚀 Featured Projects
+### Featured Projects
 
 <table>
 <tr>
 <td width="50%" valign="top">
 
-#### 📉 [Trader Sentiment Analysis](https://github.com/VishnujanNarayanan/Trader_sentiment_analysis)
+#### [Trader Sentiment Analysis](https://github.com/VishnujanNarayanan/Trader_sentiment_analysis)
 Data-driven analysis of trader behavior against the **Bitcoin Fear & Greed Index** to validate sentiment-based trading strategies.
 
 `Jupyter` `pandas` `Quant Research`
@@ -113,7 +123,7 @@ Data-driven analysis of trader behavior against the **Bitcoin Fear & Greed Index
 </td>
 <td width="50%" valign="top">
 
-#### 🧬 [Neural Net from Scratch](https://github.com/VishnujanNarayanan/Neural_net_from_scratch)
+#### [Neural Net from Scratch](https://github.com/VishnujanNarayanan/Neural_net_from_scratch)
 A neural network built with **pure NumPy** — forward pass, backprop, and gradient descent hand-rolled — to detect breast cancer.
 
 `NumPy` `Deep Learning` `From Scratch`
@@ -123,7 +133,7 @@ A neural network built with **pure NumPy** — forward pass, backprop, and gradi
 <tr>
 <td width="50%" valign="top">
 
-#### 📐 [Linear Regression from Scratch](https://github.com/VishnujanNarayanan/Linear_regression_from_scratch)
+#### [Linear Regression from Scratch](https://github.com/VishnujanNarayanan/Linear_regression_from_scratch)
 Gradient descent, cost surfaces, and closed-form solutions implemented with **only NumPy** — no scikit-learn.
 
 `NumPy` `Optimization` `Math`
@@ -131,7 +141,7 @@ Gradient descent, cost surfaces, and closed-form solutions implemented with **on
 </td>
 <td width="50%" valign="top">
 
-#### 🕵️ [Fraud Detection](https://github.com/VishnujanNarayanan/fraud_detection)
+#### [Fraud Detection](https://github.com/VishnujanNarayanan/fraud_detection)
 Detecting fraudulent transactions on heavily **imbalanced data** with feature engineering and classification models.
 
 `scikit-learn` `Imbalanced Data`
@@ -141,7 +151,7 @@ Detecting fraudulent transactions on heavily **imbalanced data** with feature en
 <tr>
 <td width="50%" valign="top">
 
-#### 🤖 [TradingAgents](https://github.com/VishnujanNarayanan/TradingAgents)
+#### [TradingAgents](https://github.com/VishnujanNarayanan/TradingAgents)
 Multi-agent **LLM financial trading framework** — specialised agents debating and executing market decisions.
 
 `LLM Agents` `Python` `Finance`
@@ -149,7 +159,7 @@ Multi-agent **LLM financial trading framework** — specialised agents debating 
 </td>
 <td width="50%" valign="top">
 
-#### ⚡ [Binance Futures Trading Bot](https://github.com/VishnujanNarayanan/binance-futures-trading-bot)
+#### [Binance Futures Trading Bot](https://github.com/VishnujanNarayanan/binance-futures-trading-bot)
 Automated futures trading bot with strategy execution and risk controls against the Binance API.
 
 `Python` `API` `Automation`
@@ -159,7 +169,7 @@ Automated futures trading bot with strategy execution and risk controls against 
 <tr>
 <td width="50%" valign="top">
 
-#### 🎫 [Ticket Classifier (NLP)](https://github.com/VishnujanNarayanan/ticket-classifier-nlp)
+#### [Ticket Classifier (NLP)](https://github.com/VishnujanNarayanan/ticket-classifier-nlp)
 Support-ticket triage using **NLP + ML** — text vectorisation through to multi-class routing.
 
 `NLP` `scikit-learn`
@@ -167,7 +177,7 @@ Support-ticket triage using **NLP + ML** — text vectorisation through to multi
 </td>
 <td width="50%" valign="top">
 
-#### 🛍️ [Product Explorer](https://github.com/VishnujanNarayanan/product-explorer)
+#### [Product Explorer](https://github.com/VishnujanNarayanan/product-explorer)
 Full-stack **TypeScript** product browsing app — the front-end side of shipping data work as a product.
 
 `TypeScript` `React`
@@ -177,7 +187,7 @@ Full-stack **TypeScript** product browsing app — the front-end side of shippin
 <tr>
 <td width="50%" valign="top">
 
-#### 🧑‍🤝‍🧑 [Age & Gender Image Classifier](https://github.com/VishnujanNarayanan/Image_classifier)
+#### [Age & Gender Image Classifier](https://github.com/VishnujanNarayanan/Image_classifier)
 CNN-based facial image classification predicting **age bracket and gender**.
 
 `TensorFlow` `Computer Vision`
@@ -185,7 +195,7 @@ CNN-based facial image classification predicting **age bracket and gender**.
 </td>
 <td width="50%" valign="top">
 
-#### 💬 [Quotes Retrieval](https://github.com/VishnujanNarayanan/Quotes_Retrieval)
+#### [Quotes Retrieval](https://github.com/VishnujanNarayanan/Quotes_Retrieval)
 Retrieval system for famous quotes — semantic search over a curated corpus.
 
 `Python` `Retrieval`
