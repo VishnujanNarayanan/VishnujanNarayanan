@@ -87,13 +87,12 @@ MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
 SNAKE_STEP_SECONDS = 0.04    # one grid step per frame
 SNAKE_LENGTH = 4             # starting length, and the length it returns to
 GROW_PER_CELLS = 12          # cells swallowed per extra body segment
-SHRINK_PER_CELLS = 3         # cells sown per segment released, on the way back
-DETOUR_CHANCE = 0.25         # how often the head wanders off the direct line
-SOW_DETOUR_CHANCE = 0.12     # tighter wandering on the respawn tour
+DETOUR_CHANCE = 0.12         # how often the head wanders off the direct line
+SOW_DETOUR_CHANCE = 0.06     # tighter wandering on the respawn tour
 FAR_TARGET_CHANCE = 0.1      # share of targets picked from the far half
 HEAD_SCALE = 1.14            # head, relative to a contribution cell
-SEGMENT_DROP = 0.10          # size lost per segment going back
-TAIL_SCALE = 0.45            # floor, well under a cell so the tail reads thin
+TAIL_SHORT = 0.65            # tail size when the snake is back to its shortest
+TAIL_LONG = 0.45             # tail size at full stretch
 HUNT_SEED = 7                # fixed, so output only changes with the data
 
 
@@ -260,6 +259,7 @@ def hunt(cols: int, alive: set[tuple[int, int]]) -> dict:
     eaten_at: dict[tuple[int, int], int] = {}
     body = deque([head])          # head first, tail last
     occupied = {head}
+    banned: set[tuple[int, int]] = set()
     lengths = [SNAKE_LENGTH]      # the body length actually enforced per frame
 
     def neighbours(pos):
@@ -291,7 +291,8 @@ def hunt(cols: int, alive: set[tuple[int, int]]) -> dict:
         # The tail vacates as we advance, so treat it as free; everything else
         # in the body is a collision.
         tail = body[-1]
-        free = [c for c in cand if c not in occupied or c == tail]
+        free = [c for c in cand
+                if (c not in occupied or c == tail) and c not in banned]
         if not free:
             # Boxed in anyway. Step onto the oldest body cell available, which
             # clears soonest, so any overlap is as brief as possible.
@@ -355,13 +356,13 @@ def hunt(cols: int, alive: set[tuple[int, int]]) -> dict:
     while to_sow or len(path) <= max(respawn_at.values(), default=0):
         f = len(path)
         returned += due.pop(f, 0)
-        # Shed length faster than it was gained. A cell reappears as the tail
-        # clears it, so a long body puts the new dot far behind the head -- the
-        # eye follows the head and reads that as the dot landing somewhere
-        # unrelated. Getting short early keeps the dot right behind the snake.
-        length = max(SNAKE_LENGTH,
-                     SNAKE_LENGTH + swallowed // GROW_PER_CELLS
-                     - returned // SHRINK_PER_CELLS)
+        # Length tracks how much of the board is still missing, rather than
+        # counting down at a fixed rate per cell sown. A fixed rate bottomed the
+        # snake out a quarter of the way through the tour and left it at minimum
+        # for the rest; this way it is still visibly long at halfway and only
+        # reaches its starting size as the last dots go back.
+        left = swallowed - returned
+        length = SNAKE_LENGTH + round(swallowed // GROW_PER_CELLS * left / swallowed)
         target = aim(to_sow, target)
         advance(step(target, SOW_DETOUR_CHANCE), length)
         if head in to_sow:
@@ -374,10 +375,21 @@ def hunt(cols: int, alive: set[tuple[int, int]]) -> dict:
     # began, so restarting is a single legal step instead of a teleport. The
     # renderer indexes the path modulo its length, so the body wraps too.
     start = path[0]
+    # Off limits on the way home: walking through the start cell would put it in
+    # the body twice once the path wraps, and the seam is exactly where that
+    # shows.
+    banned.add(start)
     guard = cols * 7 * 2
-    while head not in neighbours(start) and guard > 0:
+    while guard > 0:
+        # Stop only once the head is one step from home *and* the cells that
+        # will wrap into the body at frame zero are clear of the start cell --
+        # otherwise the start appears twice in the body across the seam.
+        wraps = path[-(SNAKE_LENGTH - 1):] if SNAKE_LENGTH > 1 else []
+        if head in neighbours(start) and start not in wraps:
+            break
         advance(step(start), SNAKE_LENGTH)
         guard -= 1
+    banned.discard(start)
 
     # The homing walk and the wrapped body can both put the snake back over a
     # cell exactly as it was due to reappear, which would pop it in underneath
@@ -522,17 +534,26 @@ def contributions_card(d: dict, theme: str) -> str:
     s.append(f'<g transform="translate({left} {top}) scale({step})">')
     unit = cell / step
 
+    def taper(k, live):
+        """Size of segment `k` on a body currently `live` segments long.
+
+        The tail thins out as the snake grows: TAIL_SHORT when it is back to
+        its starting length, TAIL_LONG at full stretch. Segment size therefore
+        depends on the live length, not just position, so it has to be animated
+        rather than baked into the rect.
+        """
+        if live <= 1:
+            return HEAD_SCALE
+        span = max(1, longest_snake - SNAKE_LENGTH)
+        grown = min(1.0, max(0.0, (live - SNAKE_LENGTH) / span))
+        tail = TAIL_SHORT + (TAIL_LONG - TAIL_SHORT) * grown
+        return HEAD_SCALE + (tail - HEAD_SCALE) * (k / (live - 1))
+
+    # Length only changes a few dozen times a loop, so keying size and opacity
+    # off those moments keeps each segment's keyframes small.
+    shifts = [0] + [f for f in range(1, frames) if lengths[f] != lengths[f - 1]]
+
     for k in range(longest_snake):
-        shown = ["1" if k < lengths[f] else "0" for f in range(frames)]
-
-        # Taper: the head sits proud of a normal cell and every segment behind
-        # it drops by a fixed step down to a floor. Deliberately not scaled
-        # across the current length -- doing that made the taper vanish
-        # whenever the snake was short, which is most of the way home.
-        scale = max(TAIL_SCALE, HEAD_SCALE - SEGMENT_DROP * k)
-        size = unit * scale
-        inset = (unit - size) / 2       # keep the smaller segments centred
-
         if k == 0:
             fill, base = t["snake_head"], 1.0
         else:
@@ -544,29 +565,41 @@ def contributions_card(d: dict, theme: str) -> str:
         # body, so they all share the one `slither` keyframe set.
         anims = [f"slither {period}s step-end {-k * SNAKE_STEP_SECONDS:.3f}s infinite"]
 
-        # Segments that come and go need an opacity track. Length only changes a
-        # few dozen times, and a given segment usually toggles just twice, so
-        # these keyframes stay tiny.
-        if "0" in shown:
-            marks = [(0.0, base if shown[0] == "1" else 0.0)]
-            for f in range(1, frames):
-                if shown[f] != shown[f - 1]:
-                    marks.append((f / frames * 100, base if shown[f] == "1" else 0.0))
-            body_rules.append(
-                f"@keyframes v{k}{{"
-                + "".join(f"{pct:.4f}%{{opacity:{val}}}" for pct, val in marks)
-                + "}"
-            )
-            anims.append(f"v{k} {period}s step-end 0s infinite")
+        marks = []
+        for f in shifts:
+            live = lengths[f]
+            if k < live:
+                marks.append((f / frames * 100, taper(k, live), base))
+            else:
+                marks.append((f / frames * 100, TAIL_LONG, 0.0))
+        # Collapse runs where nothing changed.
+        trimmed = [marks[0]]
+        for m in marks[1:]:
+            if (m[1], m[2]) != (trimmed[-1][1], trimmed[-1][2]):
+                trimmed.append(m)
+        body_rules.append(
+            f"@keyframes b{k}{{"
+            + "".join(f"{pct:.4f}%{{transform:scale({sc:.4f});opacity:{op}}}"
+                      for pct, sc, op in trimmed)
+            + "}"
+        )
+        anims.append(f"b{k} {period}s step-end 0s infinite")
+        body_rules.append(f".s{k}>rect{{animation:{anims[1]}}}")
+        body_rules.append(f".s{k}{{animation:{anims[0]}}}")
 
-        body_rules.append(f".s{k}{{animation:{','.join(anims)}}}")
+        # Two nested elements because the two transforms run on different
+        # clocks: the group carries the shared route with a per-segment delay,
+        # the rect carries its own size track with none.
         wi, r = path[(0 - k) % frames]
+        start = taper(k, lengths[0]) if k < lengths[0] else TAIL_LONG
         s.append(
-            f'<rect class="sn s{k}" x="{inset:.4f}" y="{inset:.4f}" '
-            f'width="{size:.4f}" height="{size:.4f}" rx="{3 / step * scale:.4f}" '
-            f'fill="{fill}" opacity="{base if k < SNAKE_LENGTH else 0}" '
-            # Static fallback for anything that ignores the animation entirely.
-            f'transform="translate({wi} {r})"/>'
+            f'<g class="sn s{k}" transform="translate({wi + unit / 2:.4f} '
+            f'{r + unit / 2:.4f})">'
+            f'<rect x="{-unit / 2:.4f}" y="{-unit / 2:.4f}" '
+            f'width="{unit:.4f}" height="{unit:.4f}" rx="{3 / step:.4f}" '
+            f'fill="{fill}" opacity="{base if k < lengths[0] else 0}" '
+            f'transform="scale({start:.4f})"/>'
+            f"</g>"
         )
 
     s.append("</g>")
@@ -574,14 +607,17 @@ def contributions_card(d: dict, theme: str) -> str:
     # One keyframe set for the head's whole route. Segment k is the same track
     # delayed by k frames, which is why 15 segments cost one set of keyframes
     # rather than fifteen.
+    half = unit / 2
     track = "".join(
-        f"{f / frames * 100:.4f}%{{transform:translate({path[f][0]}px,{path[f][1]}px)}}"
+        f"{f / frames * 100:.4f}%{{transform:"
+        f"translate({path[f][0] + half:.3f}px,{path[f][1] + half:.3f}px)}}"
         for f in range(frames)
     )
+    rules.append(".sn>rect{transform-box:fill-box;transform-origin:center}")
     rules.append(f"@keyframes slither{{{track}}}")
     rules.extend(body_rules)
     rules.append(
-        "@media(prefers-reduced-motion:reduce){.e,.sn{animation:none}}"
+        "@media(prefers-reduced-motion:reduce){.e,.sn,.sn>rect{animation:none}}"
     )
     s[style_at] = "<style>" + "".join(rules) + "</style>"
 
