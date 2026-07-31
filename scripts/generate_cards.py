@@ -561,9 +561,15 @@ def contributions_card(d: dict, theme: str) -> str:
             # Fade along the body too, with a floor so a long tail stays visible.
             base = max(0.35, 1 - k / (longest_snake + 2))
 
-        # Every segment replays the head's track, delayed by its position in the
+        # Every segment replays the head's track, lagging by its position in the
         # body, so they all share the one `slither` keyframe set.
-        anims = [f"slither {period}s step-end {-k * SNAKE_STEP_SECONDS:.3f}s infinite"]
+        #
+        # A negative delay starts an animation part-way in, so -k*step would put
+        # segment k that many frames *ahead* of the head and the snake would run
+        # tail first. To lag by k frames on a loop, wind back a whole period
+        # instead: -(period - k*step).
+        lag = -((period - k * SNAKE_STEP_SECONDS) % period)
+        anims = [f"slither {period}s step-end {lag:.3f}s infinite"]
 
         marks = []
         for f in shifts:
