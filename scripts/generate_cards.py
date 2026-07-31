@@ -91,6 +91,8 @@ SHRINK_PER_CELLS = 3         # cells sown per segment released, on the way back
 DETOUR_CHANCE = 0.25         # how often the head wanders off the direct line
 SOW_DETOUR_CHANCE = 0.12     # tighter wandering on the respawn tour
 FAR_TARGET_CHANCE = 0.1      # share of targets picked from the far half
+HEAD_SCALE = 1.08            # head, relative to a contribution cell
+TAIL_SCALE = 0.62            # last segment of the longest the snake gets
 HUNT_SEED = 7                # fixed, so output only changes with the data
 
 
@@ -518,8 +520,7 @@ def contributions_card(d: dict, theme: str) -> str:
     # index ("31,4") rather than a pixel pair ("456,78"). Across ~700 frames and
     # a 20-odd segment body that roughly halves the file.
     s.append(f'<g transform="translate({left} {top}) scale({step})">')
-    unit = f"{cell / step:.4f}"
-    radius = f"{3 / step:.4f}"
+    unit = cell / step
 
     for k in range(longest_snake):
         coords, shown = [], []
@@ -530,11 +531,21 @@ def contributions_card(d: dict, theme: str) -> str:
             wi, r = path[(f - k) % frames]
             coords.append(f"{wi},{r}")
             shown.append("1" if k < lengths[f] else "0")
+
+        # Taper: the head sits a touch proud of a normal cell and each segment
+        # behind it is a little smaller, so the body reads as having a
+        # direction even in a still frame. Scaled over the longest the snake
+        # ever gets, so a short snake tapers gently and a long one clearly.
+        drop = k / max(1, longest_snake - 1)
+        scale = HEAD_SCALE - (HEAD_SCALE - TAIL_SCALE) * drop
+        size = unit * scale
+        inset = (unit - size) / 2       # keep the smaller segments centred
+
         if k == 0:
             fill, base = t["snake_head"], 1.0
         else:
             fill = t["snake_body"]
-            # Taper along the body, with a floor so a long tail stays visible.
+            # Fade along the body too, with a floor so a long tail stays visible.
             base = max(0.35, 1 - k / (longest_snake + 2))
         # Only segments that come and go need the extra opacity track.
         fade = ""
@@ -543,7 +554,8 @@ def contributions_card(d: dict, theme: str) -> str:
                     f'dur="{period}s" repeatCount="indefinite" '
                     f'values="{";".join(str(round(base * int(v), 2)) for v in shown)}"/>')
         s.append(
-            f'<rect class="sn" width="{unit}" height="{unit}" rx="{radius}" '
+            f'<rect class="sn" x="{inset:.4f}" y="{inset:.4f}" '
+            f'width="{size:.4f}" height="{size:.4f}" rx="{3 / step * scale:.4f}" '
             f'fill="{fill}" opacity="{base if k < SNAKE_LENGTH else 0}" '
             # Static fallback position: without this, a renderer that ignores
             # SMIL stacks every segment at the card's top-left corner.
