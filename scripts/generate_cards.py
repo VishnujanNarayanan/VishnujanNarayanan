@@ -91,6 +91,7 @@ GROW_PER_CELLS = 12          # cells swallowed per extra body segment
 DETOUR_CHANCE = 0.12         # how often the head wanders off the direct line
 SOW_DETOUR_CHANCE = 0.0      # the respawn tour runs straight, no wandering
 FAR_TARGET_CHANCE = 0.1      # share of targets picked from the far half
+CYCLES = 2                   # clear-and-sow rounds baked into one animation
 CROSS_PENALTY = 12           # cost of routing back over an already sown dot
 HEAD_SCALE = 1.14            # head, relative to a contribution cell
 TAIL_SHORT = 0.65            # tail size when the snake is back to its shortest
@@ -236,33 +237,29 @@ def heat_index(count: int, cuts: tuple[int, int, int]) -> int:
 
 
 def hunt(cols: int, alive: set[tuple[int, int]]) -> dict:
-    """Simulate a snake that clears the board, then sows it back.
+    """Simulate the snake for `CYCLES` rounds of clearing and re-sowing.
 
-    Phase one eats every contribution cell; phase two tours them again and each
-    reappears as the tail clears it. The head never steps onto its own body --
-    only the tail cell, which is vacated on the same frame -- and a flood-fill
-    check keeps it out of pockets it could not escape.
+    Not one fixed trail on repeat: each round hunts with its own randomness and
+    each begins wherever the previous round finished sowing, so start and end
+    points move and successive rounds look different. Rounds run straight into
+    one another -- no walk back to a home square between them, which is what
+    used to box the snake in and then teleport it.
 
-    Targets are held until reached rather than recomputed every frame, and
-    `FAR_TARGET_CHANCE` of them are picked at random from anywhere on the board
-    instead of nearest-first. Always chasing the nearest cell makes the snake
-    exhaust one region before grudgingly moving on; committing to an occasional
-    distant target is what sends it across the whole board.
+    Hunting keeps its wandering; sowing is routed with Dijkstra and stays tight.
+    Every move is checked for escape room, so the snake cannot seal itself in.
 
-    The route closes: it finishes adjacent to where it started, so the renderer
-    can index the path modulo its length and the loop carries no seam.
-
-    Seeded, so the animation only changes when the contribution data does.
+    Returns the head track, per-cycle eat and respawn frames for each cell, and
+    the body length at every frame.
     """
     rng = random.Random(HUNT_SEED)
-    remaining = set(alive)
     head = (0, 3)
     path = [head]
-    eaten_at: dict[tuple[int, int], int] = {}
-    body = deque([head])          # head first, tail last
+    body = deque([head])
     occupied = {head}
+    lengths = [SNAKE_LENGTH]
     banned: set[tuple[int, int]] = set()
-    lengths = [SNAKE_LENGTH]      # the body length actually enforced per frame
+    eaten_at: dict[tuple[int, int], list[int]] = {c: [] for c in alive}
+    respawn_at: dict[tuple[int, int], list[int]] = {c: [] for c in alive}
 
     def neighbours(pos):
         x, y = pos
@@ -271,13 +268,7 @@ def hunt(cols: int, alive: set[tuple[int, int]]) -> dict:
                 if 0 <= a < cols and 0 <= b < 7]
 
     def room(start, blocked, cap):
-        """Free cells reachable from `start`, counted up to `cap`.
-
-        Greedy hunting will happily walk into a pocket it cannot get out of,
-        which is the only way this snake ever collides. Rejecting moves whose
-        reachable space is smaller than the body avoids the trap in the first
-        place, rather than handling the crash afterwards.
-        """
+        """Free cells reachable from `start`, counted up to `cap`."""
         seen = {start}
         stack = [start]
         while stack and len(seen) < cap:
@@ -287,39 +278,34 @@ def hunt(cols: int, alive: set[tuple[int, int]]) -> dict:
                     stack.append(n)
         return len(seen)
 
-    def step(target, detour=DETOUR_CHANCE):
-        """Pick the next cell, preferring progress toward `target`."""
-        cand = neighbours(head)
-        # The tail vacates as we advance, so treat it as free; everything else
-        # in the body is a collision.
+    def safe(cell):
+        """Would stepping here leave the body enough space to keep moving?"""
         tail = body[-1]
-        pick_from = [c for c in cand
-                     if (c not in occupied or c == tail) and c not in banned]
-        if not pick_from:
-            # Boxed in anyway. Step onto the oldest body cell available, which
-            # clears soonest, so any overlap is as brief as possible.
+        if cell in occupied and cell != tail:
+            return False
+        need = len(body) + 1
+        blocked = (occupied - {tail} | banned) - {cell}
+        return room(cell, blocked, need) >= need
+
+    def step(target, detour=DETOUR_CHANCE):
+        """One greedy step, preferring progress toward `target`."""
+        cand = neighbours(head)
+        options = [c for c in cand if safe(c)]
+        if not options:
+            tail = body[-1]
+            options = [c for c in cand
+                       if (c not in occupied or c == tail) and c not in banned]
+        if not options:
             order = {c: i for i, c in enumerate(body)}
             return max(cand, key=lambda c: order.get(c, -1)) if cand else head
-
-        need = len(body) + 1
-        after = (occupied - {tail}) | banned
-        roomy = [c for c in pick_from if room(c, after - {c}, need) >= need]
-        pick = roomy or pick_from
-
         if target is None or rng.random() < detour:
-            return rng.choice(pick)
-        return min(pick, key=lambda m: abs(m[0] - target[0]) + abs(m[1] - target[1]))
+            return rng.choice(options)
+        return min(options,
+                   key=lambda m: abs(m[0] - target[0]) + abs(m[1] - target[1]))
 
-    def plan(goals, sown):
-        """Cheapest route from the head to the nearest goal.
-
-        Crossing a dot already sown is allowed but expensive, so the tour walks
-        around its own work when there is a way round and only cuts across when
-        that is the only option. Greedy single-stepping cannot do this: told to
-        avoid sown dots outright it wanders among clean cells that lead nowhere
-        and the tour never finishes, which is exactly what stalled it.
-        """
-        blocked = set(list(body)[:-1])
+    def plan(goals, pricey):
+        """Cheapest route to the nearest goal; `pricey` cells cost extra."""
+        blocked = set(list(body)[:-1]) | banned
         dist = {head: 0}
         prev: dict = {}
         queue = [(0, head)]
@@ -334,11 +320,11 @@ def hunt(cols: int, alive: set[tuple[int, int]]) -> dict:
             for n in neighbours(cur):
                 if n in blocked:
                     continue
-                nxt_cost = cost + 1 + (CROSS_PENALTY if n in sown else 0)
-                if nxt_cost < dist.get(n, 1 << 30):
-                    dist[n] = nxt_cost
+                nxt = cost + 1 + (CROSS_PENALTY if n in pricey else 0)
+                if nxt < dist.get(n, 1 << 30):
+                    dist[n] = nxt
                     prev[n] = cur
-                    heapq.heappush(queue, (nxt_cost, n))
+                    heapq.heappush(queue, (nxt, n))
         if goal is None:
             return []
         route = []
@@ -366,105 +352,95 @@ def hunt(cols: int, alive: set[tuple[int, int]]) -> dict:
         if not pool:
             return None
         if rng.random() < far:
-            # Bias toward the far half of the board so the snake actually
-            # crosses it rather than nibbling whatever is next door.
             ranked = sorted(pool, key=lambda c: -(abs(c[0] - head[0])
                                                   + abs(c[1] - head[1])))
             return rng.choice(ranked[:max(1, len(ranked) // 2)])
         return min(pool, key=lambda c: abs(c[0] - head[0]) + abs(c[1] - head[1]))
 
-    length = SNAKE_LENGTH
-    target = None
-    while remaining and len(path) < cols * 7 * 6:
-        target = aim(remaining, target)
-        advance(step(target), length)
-        if head in remaining:
-            remaining.discard(head)
-            eaten_at[head] = len(path) - 1
-            length = SNAKE_LENGTH + len(eaten_at) // GROW_PER_CELLS
+    def routed_step(goals, pricey, route):
+        """Follow a planned route, replanning when the body blocks it.
 
-    # Phase two: a second tour over the same cells. A cell reappears on the
-    # frame the *tail* clears it, so the snake sows the board back in behind
-    # itself -- which is why the respawn frame is the head's arrival plus the
-    # current body length, the point at which the body no longer covers it.
-    swallowed = len(eaten_at)
-    to_sow = set(eaten_at)
-    respawn_at: dict[tuple[int, int], int] = {}
-    due: dict[int, int] = {}
-    returned = 0
+        Replans are capped: the planner has no notion of the escape room check,
+        so an unsafe first square would otherwise be replanned to the identical
+        route for ever.
+        """
+        if goals and not route:
+            route = plan(goals, pricey)
+        for _ in range(2):
+            if route and safe(route[0]):
+                return route.pop(0), route
+            route = plan(goals, pricey) if goals else []
+        return step(None, 0.0), []
 
-    sown: set[tuple[int, int]] = set()
-    route: list = []
-    ceiling = len(path) + cols * 7 * 8      # guard against an unfinishable tour
-    while (to_sow or len(path) <= max(respawn_at.values(), default=0)) \
-            and len(path) < ceiling:
-        f = len(path)
-        returned += due.pop(f, 0)
-        # Length tracks how much of the board is still missing, rather than
-        # counting down at a fixed rate per cell sown. A fixed rate bottomed the
-        # snake out a quarter of the way through the tour and left it at minimum
-        # for the rest; this way it is still visibly long at halfway and only
-        # reaches its starting size as the last dots go back.
-        left = swallowed - returned
-        length = SNAKE_LENGTH + round(swallowed // GROW_PER_CELLS * left / swallowed)
-        # Follow a planned route rather than stepping greedily, replanning
-        # whenever the body gets in the way of the next square.
-        if to_sow and not route:
-            route = plan(to_sow, sown)
-        if route:
-            nxt = route[0]
-            if nxt in occupied and nxt != body[-1]:
-                route = []
-                nxt = step(None, SOW_DETOUR_CHANCE)
-            else:
-                route.pop(0)
-        else:
-            nxt = step(None, SOW_DETOUR_CHANCE)
-        advance(nxt, length)
-        if head in to_sow:
-            to_sow.discard(head)
-            sown.add(head)
-            clear = f + length
-            respawn_at[head] = clear
-            due[clear] = due.get(clear, 0) + 1
+    total = max(1, CYCLES)
+    for _ in range(total):
+        # --- clear the board -------------------------------------------------
+        remaining = set(alive)
+        length = SNAKE_LENGTH
+        target = None
+        guard = cols * 7 * 8
+        while remaining and guard > 0:
+            target = aim(remaining, target)
+            advance(step(target), length)
+            guard -= 1
+            if head in remaining:
+                remaining.discard(head)
+                eaten_at[head].append(len(path) - 1)
+                done = sum(len(v) for v in eaten_at.values())
+                length = SNAKE_LENGTH + (len(alive) - len(remaining)) // GROW_PER_CELLS
 
-    # Close the loop: walk home until the head sits one cell from where it
-    # began, so restarting is a single legal step instead of a teleport. The
-    # renderer indexes the path modulo its length, so the body wraps too.
+        # --- sow it back -----------------------------------------------------
+        swallowed = len(alive)
+        to_sow = set(alive)
+        sown: set[tuple[int, int]] = set()
+        due: dict[int, int] = {}
+        returned = 0
+        route: list = []
+        pending = 0
+        guard = cols * 7 * 8
+        while (to_sow or len(path) <= pending) and guard > 0:
+            f = len(path)
+            returned += due.pop(f, 0)
+            left = swallowed - returned
+            length = SNAKE_LENGTH + round(
+                swallowed // GROW_PER_CELLS * left / swallowed)
+            nxt, route = routed_step(to_sow, sown, route)
+            advance(nxt, length)
+            guard -= 1
+            if head in to_sow:
+                to_sow.discard(head)
+                sown.add(head)
+                clear = f + length
+                respawn_at[head].append(clear)
+                due[clear] = due.get(clear, 0) + 1
+                pending = max(pending, clear)
+
+    # Close the loop back to the very first square. Routed, not stumbled
+    # towards: greedy stepping here was what got the snake walled in, and when
+    # its guard ran out the head jumped across the board.
     start = path[0]
-    # Off limits on the way home: walking through the start cell would put it in
-    # the body twice once the path wraps, and the seam is exactly where that
-    # shows.
-    # Keep clear of the sown dots on the way home as well: parking the body on
-    # one would hold it dark past the frame it was due to reappear.
-    banned.clear()
-    banned.update(sown)
     banned.add(start)
-    guard = cols * 7 * 2
+    guard = cols * 7 * 4
     while guard > 0:
-        # Stop only once the head is one step from home *and* the cells that
-        # will wrap into the body at frame zero are clear of the start cell --
-        # otherwise the start appears twice in the body across the seam.
         wraps = path[-(SNAKE_LENGTH - 1):] if SNAKE_LENGTH > 1 else []
         if head in neighbours(start) and start not in wraps:
             break
-        advance(step(start), SNAKE_LENGTH)
+        goals = set(neighbours(start))
+        nxt, _ = routed_step(goals, set(), [])
+        advance(nxt, SNAKE_LENGTH)
         guard -= 1
     banned.discard(start)
 
-    # The homing walk and the wrapped body can both put the snake back over a
-    # cell exactly as it was due to reappear, which would pop it in underneath
-    # the body. Slide those few forward to the next clear frame.
     frames = len(path)
 
     def covered(cell, f):
         return any(path[(f - k) % frames] == cell for k in range(lengths[f]))
 
-    for c, due_at in respawn_at.items():
-        f = due_at
-        while f < frames - 1 and covered(c, f):
-            f += 1
-        respawn_at[c] = f
+    for cell, times in respawn_at.items():
+        for i, f in enumerate(times):
+            while f < frames - 1 and covered(cell, f):
+                f += 1
+            times[i] = f
 
     return {"path": path, "eaten_at": eaten_at, "respawn_at": respawn_at,
             "frames": frames, "lengths": lengths}
@@ -551,15 +527,15 @@ def contributions_card(d: dict, theme: str) -> str:
              "animation-iteration-count:infinite}"]
     dead = t["heat"][0]
     cell_class: dict[tuple[int, int], str] = {}
-    for i, (pos, gone) in enumerate(sorted(eaten_at.items(), key=lambda kv: kv[1])):
-        back = respawn_at[pos]
-        a = gone / frames * 100
-        b = min(99.9, back / frames * 100)
+    # With several rounds per animation a cell is swallowed and sown more than
+    # once, so its track alternates through every pair of frames it was given.
+    for i, pos in enumerate(sorted(eaten_at, key=lambda c: eaten_at[c][0])):
+        stops = ["0%{fill:var(--a)}"]
+        for gone, back in zip(eaten_at[pos], respawn_at[pos]):
+            stops.append(f"{gone / frames * 100:.3f}%{{fill:{dead}}}")
+            stops.append(f"{min(99.9, back / frames * 100):.3f}%{{fill:var(--a)}}")
         cell_class[pos] = f"k{i}"
-        rules.append(
-            f"@keyframes k{i}{{0%{{fill:var(--a)}}{a:.2f}%{{fill:{dead}}}"
-            f"{b:.2f}%{{fill:var(--a)}}}}.k{i}{{animation-name:k{i}}}"
-        )
+        rules.append(f"@keyframes k{i}{{{''.join(stops)}}}.k{i}{{animation-name:k{i}}}")
     style_at = len(s)      # placeholder; filled once the snake rules exist
     s.append("")
     body_rules: list[str] = []
