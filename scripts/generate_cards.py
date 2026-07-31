@@ -20,6 +20,7 @@ import random
 import subprocess
 import sys
 import urllib.request
+import heapq
 from collections import deque
 from pathlib import Path
 
@@ -88,8 +89,9 @@ SNAKE_STEP_SECONDS = 0.04    # one grid step per frame
 SNAKE_LENGTH = 4             # starting length, and the length it returns to
 GROW_PER_CELLS = 12          # cells swallowed per extra body segment
 DETOUR_CHANCE = 0.12         # how often the head wanders off the direct line
-SOW_DETOUR_CHANCE = 0.06     # tighter wandering on the respawn tour
+SOW_DETOUR_CHANCE = 0.0      # the respawn tour runs straight, no wandering
 FAR_TARGET_CHANCE = 0.1      # share of targets picked from the far half
+CROSS_PENALTY = 12           # cost of routing back over an already sown dot
 HEAD_SCALE = 1.14            # head, relative to a contribution cell
 TAIL_SHORT = 0.65            # tail size when the snake is back to its shortest
 TAIL_LONG = 0.45             # tail size at full stretch
@@ -291,22 +293,61 @@ def hunt(cols: int, alive: set[tuple[int, int]]) -> dict:
         # The tail vacates as we advance, so treat it as free; everything else
         # in the body is a collision.
         tail = body[-1]
-        free = [c for c in cand
-                if (c not in occupied or c == tail) and c not in banned]
-        if not free:
+        pick_from = [c for c in cand
+                     if (c not in occupied or c == tail) and c not in banned]
+        if not pick_from:
             # Boxed in anyway. Step onto the oldest body cell available, which
             # clears soonest, so any overlap is as brief as possible.
             order = {c: i for i, c in enumerate(body)}
             return max(cand, key=lambda c: order.get(c, -1)) if cand else head
 
         need = len(body) + 1
-        after = (occupied - {tail})
-        roomy = [c for c in free if room(c, after - {c}, need) >= need]
-        pick = roomy or free
+        after = (occupied - {tail}) | banned
+        roomy = [c for c in pick_from if room(c, after - {c}, need) >= need]
+        pick = roomy or pick_from
 
         if target is None or rng.random() < detour:
             return rng.choice(pick)
         return min(pick, key=lambda m: abs(m[0] - target[0]) + abs(m[1] - target[1]))
+
+    def plan(goals, sown):
+        """Cheapest route from the head to the nearest goal.
+
+        Crossing a dot already sown is allowed but expensive, so the tour walks
+        around its own work when there is a way round and only cuts across when
+        that is the only option. Greedy single-stepping cannot do this: told to
+        avoid sown dots outright it wanders among clean cells that lead nowhere
+        and the tour never finishes, which is exactly what stalled it.
+        """
+        blocked = set(list(body)[:-1])
+        dist = {head: 0}
+        prev: dict = {}
+        queue = [(0, head)]
+        goal = None
+        while queue:
+            cost, cur = heapq.heappop(queue)
+            if cost > dist.get(cur, 1 << 30):
+                continue
+            if cur in goals and cur != head:
+                goal = cur
+                break
+            for n in neighbours(cur):
+                if n in blocked:
+                    continue
+                nxt_cost = cost + 1 + (CROSS_PENALTY if n in sown else 0)
+                if nxt_cost < dist.get(n, 1 << 30):
+                    dist[n] = nxt_cost
+                    prev[n] = cur
+                    heapq.heappush(queue, (nxt_cost, n))
+        if goal is None:
+            return []
+        route = []
+        node = goal
+        while node != head:
+            route.append(node)
+            node = prev[node]
+        route.reverse()
+        return route
 
     def advance(nxt, length):
         nonlocal head
@@ -318,13 +359,13 @@ def hunt(cols: int, alive: set[tuple[int, int]]) -> dict:
         occupied.add(head)
         lengths.append(len(body))
 
-    def aim(pool, current):
+    def aim(pool, current, far=FAR_TARGET_CHANCE):
         """Hold a target until it is gone; sometimes commit to a distant one."""
         if current in pool:
             return current
         if not pool:
             return None
-        if rng.random() < FAR_TARGET_CHANCE:
+        if rng.random() < far:
             # Bias toward the far half of the board so the snake actually
             # crosses it rather than nibbling whatever is next door.
             ranked = sorted(pool, key=lambda c: -(abs(c[0] - head[0])
@@ -352,8 +393,11 @@ def hunt(cols: int, alive: set[tuple[int, int]]) -> dict:
     due: dict[int, int] = {}
     returned = 0
 
-    target = None
-    while to_sow or len(path) <= max(respawn_at.values(), default=0):
+    sown: set[tuple[int, int]] = set()
+    route: list = []
+    ceiling = len(path) + cols * 7 * 8      # guard against an unfinishable tour
+    while (to_sow or len(path) <= max(respawn_at.values(), default=0)) \
+            and len(path) < ceiling:
         f = len(path)
         returned += due.pop(f, 0)
         # Length tracks how much of the board is still missing, rather than
@@ -363,10 +407,23 @@ def hunt(cols: int, alive: set[tuple[int, int]]) -> dict:
         # reaches its starting size as the last dots go back.
         left = swallowed - returned
         length = SNAKE_LENGTH + round(swallowed // GROW_PER_CELLS * left / swallowed)
-        target = aim(to_sow, target)
-        advance(step(target, SOW_DETOUR_CHANCE), length)
+        # Follow a planned route rather than stepping greedily, replanning
+        # whenever the body gets in the way of the next square.
+        if to_sow and not route:
+            route = plan(to_sow, sown)
+        if route:
+            nxt = route[0]
+            if nxt in occupied and nxt != body[-1]:
+                route = []
+                nxt = step(None, SOW_DETOUR_CHANCE)
+            else:
+                route.pop(0)
+        else:
+            nxt = step(None, SOW_DETOUR_CHANCE)
+        advance(nxt, length)
         if head in to_sow:
             to_sow.discard(head)
+            sown.add(head)
             clear = f + length
             respawn_at[head] = clear
             due[clear] = due.get(clear, 0) + 1
@@ -378,6 +435,10 @@ def hunt(cols: int, alive: set[tuple[int, int]]) -> dict:
     # Off limits on the way home: walking through the start cell would put it in
     # the body twice once the path wraps, and the seam is exactly where that
     # shows.
+    # Keep clear of the sown dots on the way home as well: parking the body on
+    # one would hold it dark past the frame it was due to reappear.
+    banned.clear()
+    banned.update(sown)
     banned.add(start)
     guard = cols * 7 * 2
     while guard > 0:
