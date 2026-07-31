@@ -3,7 +3,7 @@
 <rect x="0.5" y="0.5" width="879" height="231" rx="8" fill="#ffffff" stroke="#d0d7de"/>
 <text x="22" y="36" fill="#24292f" font-size="15" font-weight="600">Vishnujan Narayanann — GitHub stats</text>
 <text x="22" y="55" fill="#57606a" font-size="12">@VishnujanNarayanan</text>
-<text x="22" y="108" fill="#0969da" font-size="22" font-weight="700">917</text>
+<text x="22" y="108" fill="#0969da" font-size="22" font-weight="700">918</text>
 <text x="22" y="126" fill="#57606a" font-size="10.5">Commits (last yr)</text>
 <text x="168" y="108" fill="#0969da" font-size="22" font-weight="700">72</text>
 <text x="168" y="126" fill="#57606a" font-size="10.5">Pull requests</text>
@@ -20,7 +20,7 @@
 <text x="470" y="64" fill="#24292f" font-size="11">Jupyter Notebook</text>
 <text x="858" y="64" fill="#57606a" font-size="10" text-anchor="end">71.7%</text>
 <rect x="470" y="69" width="388" height="7" rx="3.5" fill="#eaeef2"/>
-<rect x="470" y="69" width="278.4" height="7" rx="3.5" fill="#DA5B0B"/>
+<rect x="470" y="69" width="278.2" height="7" rx="3.5" fill="#DA5B0B"/>
 <text x="470" y="93" fill="#24292f" font-size="11">TypeScript</text>
 <text x="858" y="93" fill="#57606a" font-size="10" text-anchor="end">12.2%</text>
 <rect x="470" y="98" width="388" height="7" rx="3.5" fill="#eaeef2"/>
@@ -28,7 +28,7 @@
 <text x="470" y="122" fill="#24292f" font-size="11">Python</text>
 <text x="858" y="122" fill="#57606a" font-size="10" text-anchor="end">6.8%</text>
 <rect x="470" y="127" width="388" height="7" rx="3.5" fill="#eaeef2"/>
-<rect x="470" y="127" width="26.3" height="7" rx="3.5" fill="#3572A5"/>
+<rect x="470" y="127" width="26.5" height="7" rx="3.5" fill="#3572A5"/>
 <text x="470" y="151" fill="#24292f" font-size="11">JavaScript</text>
 <text x="858" y="151" fill="#57606a" font-size="10" text-anchor="end">5.2%</text>
 <rect x="470" y="156" width="388" height="7" rx="3.5" fill="#eaeef2"/>
