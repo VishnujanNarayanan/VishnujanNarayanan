@@ -91,8 +91,9 @@ SHRINK_PER_CELLS = 3         # cells sown per segment released, on the way back
 DETOUR_CHANCE = 0.25         # how often the head wanders off the direct line
 SOW_DETOUR_CHANCE = 0.12     # tighter wandering on the respawn tour
 FAR_TARGET_CHANCE = 0.1      # share of targets picked from the far half
-HEAD_SCALE = 1.08            # head, relative to a contribution cell
-TAIL_SCALE = 0.62            # last segment of the longest the snake gets
+HEAD_SCALE = 1.14            # head, relative to a contribution cell
+SEGMENT_DROP = 0.10          # size lost per segment going back
+TAIL_SCALE = 0.45            # floor, well under a cell so the tail reads thin
 HUNT_SEED = 7                # fixed, so output only changes with the data
 
 
@@ -486,10 +487,9 @@ def contributions_card(d: dict, theme: str) -> str:
             f"@keyframes k{i}{{0%{{fill:var(--a)}}{a:.2f}%{{fill:{dead}}}"
             f"{b:.2f}%{{fill:var(--a)}}}}.k{i}{{animation-name:k{i}}}"
         )
-    rules.append(
-        "@media(prefers-reduced-motion:reduce){.e{animation:none}.sn{display:none}}"
-    )
-    s.append("<style>" + "".join(rules) + "</style>")
+    style_at = len(s)      # placeholder; filled once the snake rules exist
+    s.append("")
+    body_rules: list[str] = []
 
     for wi, w in enumerate(weeks):
         for day in w["contributionDays"]:
@@ -523,21 +523,13 @@ def contributions_card(d: dict, theme: str) -> str:
     unit = cell / step
 
     for k in range(longest_snake):
-        coords, shown = [], []
-        for f in range(frames):
-            # Modulo, not clamped: the route is a closed loop, so a segment
-            # trailing past frame 0 belongs at the end of the path, not piled
-            # up on the starting cell.
-            wi, r = path[(f - k) % frames]
-            coords.append(f"{wi},{r}")
-            shown.append("1" if k < lengths[f] else "0")
+        shown = ["1" if k < lengths[f] else "0" for f in range(frames)]
 
-        # Taper: the head sits a touch proud of a normal cell and each segment
-        # behind it is a little smaller, so the body reads as having a
-        # direction even in a still frame. Scaled over the longest the snake
-        # ever gets, so a short snake tapers gently and a long one clearly.
-        drop = k / max(1, longest_snake - 1)
-        scale = HEAD_SCALE - (HEAD_SCALE - TAIL_SCALE) * drop
+        # Taper: the head sits proud of a normal cell and every segment behind
+        # it drops by a fixed step down to a floor. Deliberately not scaled
+        # across the current length -- doing that made the taper vanish
+        # whenever the snake was short, which is most of the way home.
+        scale = max(TAIL_SCALE, HEAD_SCALE - SEGMENT_DROP * k)
         size = unit * scale
         inset = (unit - size) / 2       # keep the smaller segments centred
 
@@ -547,26 +539,51 @@ def contributions_card(d: dict, theme: str) -> str:
             fill = t["snake_body"]
             # Fade along the body too, with a floor so a long tail stays visible.
             base = max(0.35, 1 - k / (longest_snake + 2))
-        # Only segments that come and go need the extra opacity track.
-        fade = ""
+
+        # Every segment replays the head's track, delayed by its position in the
+        # body, so they all share the one `slither` keyframe set.
+        anims = [f"slither {period}s step-end {-k * SNAKE_STEP_SECONDS:.3f}s infinite"]
+
+        # Segments that come and go need an opacity track. Length only changes a
+        # few dozen times, and a given segment usually toggles just twice, so
+        # these keyframes stay tiny.
         if "0" in shown:
-            fade = (f'<animate attributeName="opacity" calcMode="discrete" '
-                    f'dur="{period}s" repeatCount="indefinite" '
-                    f'values="{";".join(str(round(base * int(v), 2)) for v in shown)}"/>')
+            marks = [(0.0, base if shown[0] == "1" else 0.0)]
+            for f in range(1, frames):
+                if shown[f] != shown[f - 1]:
+                    marks.append((f / frames * 100, base if shown[f] == "1" else 0.0))
+            body_rules.append(
+                f"@keyframes v{k}{{"
+                + "".join(f"{pct:.4f}%{{opacity:{val}}}" for pct, val in marks)
+                + "}"
+            )
+            anims.append(f"v{k} {period}s step-end 0s infinite")
+
+        body_rules.append(f".s{k}{{animation:{','.join(anims)}}}")
+        wi, r = path[(0 - k) % frames]
         s.append(
-            f'<rect class="sn" x="{inset:.4f}" y="{inset:.4f}" '
+            f'<rect class="sn s{k}" x="{inset:.4f}" y="{inset:.4f}" '
             f'width="{size:.4f}" height="{size:.4f}" rx="{3 / step * scale:.4f}" '
             f'fill="{fill}" opacity="{base if k < SNAKE_LENGTH else 0}" '
-            # Static fallback position: without this, a renderer that ignores
-            # SMIL stacks every segment at the card's top-left corner.
-            f'transform="translate({coords[0].replace(",", " ")})">'
-            f'<animateTransform attributeName="transform" type="translate" '
-            f'calcMode="discrete" dur="{period}s" repeatCount="indefinite" '
-            f'values="{";".join(coords)}"/>{fade}'
-            f"</rect>"
+            # Static fallback for anything that ignores the animation entirely.
+            f'transform="translate({wi} {r})"/>'
         )
 
     s.append("</g>")
+
+    # One keyframe set for the head's whole route. Segment k is the same track
+    # delayed by k frames, which is why 15 segments cost one set of keyframes
+    # rather than fifteen.
+    track = "".join(
+        f"{f / frames * 100:.4f}%{{transform:translate({path[f][0]}px,{path[f][1]}px)}}"
+        for f in range(frames)
+    )
+    rules.append(f"@keyframes slither{{{track}}}")
+    rules.extend(body_rules)
+    rules.append(
+        "@media(prefers-reduced-motion:reduce){.e,.sn{animation:none}}"
+    )
+    s[style_at] = "<style>" + "".join(rules) + "</style>"
 
     ly = top + 7 * step + 22
     s.append(
