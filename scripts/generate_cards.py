@@ -85,7 +85,7 @@ MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
           "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 # Snake animation.
-SNAKE_STEP_SECONDS = 0.04    # one grid step per frame
+SNAKE_STEP_SECONDS = 0.05    # one grid step per frame
 SNAKE_LENGTH = 4             # starting length, and the length it returns to
 GROW_PER_CELLS = 12          # cells swallowed per extra body segment
 DETOUR_CHANCE = 0.12         # how often the head wanders off the direct line
