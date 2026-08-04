@@ -459,7 +459,6 @@ def contributions_card(d: dict, theme: str) -> str:
     height = top + 7 * step + 46
 
     counts = [day["contributionCount"] for w in weeks for day in w["contributionDays"]]
-    peak = max(counts, default=0)
     cuts = heat_thresholds(counts)
 
     s = svg_open(width, height, f"{d['login']} contribution history")
@@ -468,7 +467,6 @@ def contributions_card(d: dict, theme: str) -> str:
         f'fill="{t["card"]}" stroke="{t["border"]}"/>'
     )
 
-    # Header: title on the left, streak facts on the right.
     s.append(
         f'<text x="{pad}" y="{pad + 14}" fill="{t["text"]}" font-size="15" '
         f'font-weight="600">Contribution history</text>'
@@ -477,19 +475,6 @@ def contributions_card(d: dict, theme: str) -> str:
         f'<text x="{pad}" y="{pad + 33}" fill="{t["muted"]}" font-size="12">'
         f'{d["total"]} contributions in the last year</text>'
     )
-    facts = [("Current streak", f'{d["current"]}d'),
-             ("Longest streak", f'{d["longest"]}d')]
-    fx = width - pad
-    for label, value in reversed(facts):
-        s.append(
-            f'<text x="{fx}" y="{pad + 14}" fill="{t["accent"]}" font-size="15" '
-            f'font-weight="600" text-anchor="end">{value}</text>'
-        )
-        s.append(
-            f'<text x="{fx}" y="{pad + 31}" fill="{t["muted"]}" font-size="10" '
-            f'text-anchor="end">{label}</text>'
-        )
-        fx -= 104
 
     # Month labels: printed once, above the first week of each new month.
     seen = set()
@@ -677,10 +662,6 @@ def contributions_card(d: dict, theme: str) -> str:
         lx += step
     s.append(
         f'<text x="{lx + 2}" y="{ly + 9}" fill="{t["muted"]}" font-size="10">More</text>'
-    )
-    s.append(
-        f'<text x="{width - pad}" y="{ly + 9}" fill="{t["muted"]}" font-size="10" '
-        f'text-anchor="end">peak {peak} in a day</text>'
     )
 
     s.append("</svg>")
