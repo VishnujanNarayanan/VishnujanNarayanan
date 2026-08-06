@@ -1,8 +1,8 @@
-<h1 align="center">Hi 👋 I'm Vishnujan Narayanan</h1>
+<h1 align="center">Vishnujan Narayanan</h1>
 
 <p align="center">
-  <b>I build models, the pipelines that feed them, and the services that serve them.</b><br />
-  Data engineering and web scraping, end to end — from crawler to database to deployed API.
+  <b>Data pipelines, from crawlers to APIs</b><br />
+  Data Engineer — Ingestion &amp; Market Data
 </p>
 
 <div align="center">
@@ -19,12 +19,18 @@
 
 ### About me
 
-I specialise in getting data out of places it doesn't want to leave, and turning it into something a product can use.
+I build the crawlers and scheduled jobs that pull data in, the checks that keep it
+correct as sources change, and the APIs and apps that serve it. Mostly financial
+market data.
 
-- **Getting it** — headless browser crawlers behind job queues, with caching, retries, and schema-checked writes into Postgres.
-- **Moving it** — ingestion from APIs and market feeds, reshaped into queryable tables, on scheduled jobs that keep it fresh.
-- **Serving it** — REST APIs, background workers, and React front-ends, containerised with CI that deploys on push.
-- **Modelling it** — classification and regression on tabular data, text, and images, including heavily imbalanced datasets and financial time series.
+Most of my work starts with a source that doesn't want to hand anything over. A
+government filing portal with a reporting lag. A price API that degrades quietly
+instead of returning a 429. A timeline that only renders what's currently on screen.
+Right now that's around 28 ingestion pipelines behind a market-data platform — NSE
+prices, F&O bhavcopies, 20 years of insider filings, news and sentiment.
+
+The hard part is rarely the first run. It's the second one: whether a rerun repairs
+the gaps or quietly corrupts what was already there.
 
 Reach me at **narayanan.vishnujan@gmail.com**
 
@@ -46,96 +52,113 @@ Reach me at **narayanan.vishnujan@gmail.com**
 
 ---
 
-### Featured Projects
+### Projects
 
 <table>
 <tr>
 <td width="50%" valign="top">
 
-#### [Trader Sentiment Analysis](https://github.com/VishnujanNarayanan/Trader_sentiment_analysis)
-Data-driven analysis of trader behavior against the **Bitcoin Fear & Greed Index** to validate sentiment-based trading strategies.
+#### [Product Explorer](https://github.com/VishnujanNarayanan/product-explorer)
+Full-stack TypeScript app that scrapes a book catalogue into **PostgreSQL** and serves it through Next.js, streaming scrape progress over WebSockets.
 
-`Jupyter` `pandas` `Quant Research`
+`TypeScript` `Playwright` `PostgreSQL`
 
 </td>
 <td width="50%" valign="top">
 
-#### [Neural Net from Scratch](https://github.com/VishnujanNarayanan/Neural_net_from_scratch)
-A neural network built with **pure NumPy** — forward pass, backprop, and gradient descent hand-rolled — to detect breast cancer.
+#### [Minute-Level Stock Prediction](https://github.com/VishnujanNarayanan/minute-level-stock-prediction)
+Next-minute price direction over **9.4M NSE ticks** — raw trades to minute bars to a directional model, with the leakage traps that make backtests lie.
 
-`NumPy` `Deep Learning` `From Scratch`
+`scikit-learn` `pandas` `Quant`
 
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 
-#### [Linear Regression from Scratch](https://github.com/VishnujanNarayanan/Linear_regression_from_scratch)
-Gradient descent, cost surfaces, and closed-form solutions implemented with **only NumPy** — no scikit-learn.
-
-`NumPy` `Optimization` `Math`
-
-</td>
-<td width="50%" valign="top">
-
-#### [Fraud Detection](https://github.com/VishnujanNarayanan/fraud_detection)
-Detecting fraudulent transactions on heavily **imbalanced data** with feature engineering and classification models.
+#### [Fraud Transaction Detection](https://github.com/VishnujanNarayanan/Fraud_Transaction_Detection)
+**6.4M transactions** at a 0.13% fraud rate: 95% of fraud caught at 0.995 ROC-AUC, with the feature engineering that got it there.
 
 `scikit-learn` `Imbalanced Data`
 
 </td>
-</tr>
-<tr>
 <td width="50%" valign="top">
 
-#### [TradingAgents](https://github.com/VishnujanNarayanan/TradingAgents)
-Multi-agent **LLM financial trading framework** — specialised agents debating and executing market decisions.
+#### [Job Application Bot](https://github.com/VishnujanNarayanan/Job_Application_Bot)
+Scrapes Indeed, Glassdoor and LinkedIn, scores each posting against a master profile, and builds a tailored résumé per match — served on demand via FastAPI.
 
-`LLM Agents` `Python` `Finance`
-
-</td>
-<td width="50%" valign="top">
-
-#### [Binance Futures Trading Bot](https://github.com/VishnujanNarayanan/binance-futures-trading-bot)
-Automated futures trading bot with strategy execution and risk controls against the Binance API.
-
-`Python` `API` `Automation`
+`Python` `Playwright` `FastAPI`
 
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 
-#### [Ticket Classifier (NLP)](https://github.com/VishnujanNarayanan/ticket-classifier-nlp)
-Support-ticket triage using **NLP + ML** — text vectorisation through to multi-class routing.
+#### [Trader Sentiment Analysis](https://github.com/VishnujanNarayanan/Trader_sentiment_analysis)
+How the **Bitcoin Fear & Greed Index** moves trader PnL across 211K crypto trades, and a contrarian sentiment-gated signal.
+
+`pandas` `SciPy` `Quant`
+
+</td>
+<td width="50%" valign="top">
+
+#### [Support Ticket Classifier](https://github.com/VishnujanNarayanan/ticket-classifier-nlp)
+End-to-end NLP — classifies tickets by issue type and urgency, extracts entities, and serves it through a Gradio app.
 
 `NLP` `scikit-learn`
 
 </td>
+</tr>
+<tr>
 <td width="50%" valign="top">
 
-#### [Product Explorer](https://github.com/VishnujanNarayanan/product-explorer)
-Full-stack **TypeScript** product browsing app — the front-end side of shipping data work as a product.
+#### [Binance Futures Trading Bot](https://github.com/VishnujanNarayanan/binance-futures-trading-bot)
+CLI bot placing market, limit and stop-limit orders against the Binance USDT-M Futures testnet, with position management.
 
-`TypeScript` `React`
+`Python` `API` `Automation`
+
+</td>
+<td width="50%" valign="top">
+
+#### [Semantic Quote Retrieval](https://github.com/VishnujanNarayanan/Quotes_Retrieval)
+Fine-tuned sentence embeddings over a **FAISS** index of ~2,500 quotes — semantic search that finds matches sharing no keywords.
+
+`FAISS` `sentence-transformers`
+
+</td>
+</tr>
+</table>
+
+### Fundamentals
+
+Small builds written from scratch, to understand the machinery rather than call it.
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+#### [Neural Network From Scratch](https://github.com/VishnujanNarayanan/Neural_net_from_scratch)
+Feed-forward classifier in **pure NumPy** — hand-derived backprop, 97.4% accuracy / 0.995 ROC-AUC on Breast-Cancer-Wisconsin.
+
+`NumPy` `Deep Learning`
+
+</td>
+<td width="50%" valign="top">
+
+#### [Linear Regression From Scratch](https://github.com/VishnujanNarayanan/Linear_regression_from_scratch)
+Gradient descent and a closed-form solver written by hand in **NumPy**, validated against scikit-learn.
+
+`NumPy` `Optimization`
 
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 
-#### [Age & Gender Image Classifier](https://github.com/VishnujanNarayanan/Image_classifier)
-CNN-based facial image classification predicting **age bracket and gender**.
+#### [Age & Gender Classifier](https://github.com/VishnujanNarayanan/Image_classifier)
+Multi-task CNN predicting age bracket and gender from a face photo, trained on 10,000+ UTKFace images.
 
 `TensorFlow` `Computer Vision`
-
-</td>
-<td width="50%" valign="top">
-
-#### [Quotes Retrieval](https://github.com/VishnujanNarayanan/Quotes_Retrieval)
-Retrieval system for famous quotes — semantic search over a curated corpus.
-
-`Python` `Retrieval`
 
 </td>
 </tr>
@@ -195,5 +218,5 @@ Retrieval system for famous quotes — semantic search over a curated corpus.
 ---
 
 <div align="center">
-  <i>Always learning. Always shipping.</i>
+  <i>Design for the second run.</i>
 </div>
