@@ -22,11 +22,9 @@
 I build the crawlers and scheduled jobs that pull data in, the tests that ensure the
 data is valid, and the APIs and apps that serve it.
 
-Most of my work starts with a source that doesn't want to hand anything over. A
-government filing portal with a reporting lag. A price API that degrades quietly
-instead of returning a 429. A timeline that only renders what's currently on screen.
-Right now that's around 28 ingestion pipelines behind a market-data platform — NSE
-prices, F&O bhavcopies, 20 years of insider filings, news and sentiment.
+Most of my work starts with a source that doesn't want to hand anything over — APIs
+that throttle, portals that change format without warning, pages that only render
+what's currently on screen. Around 28 ingestion pipelines in production right now.
 
 The hard part is rarely the first run. It's the second one: whether a rerun repairs
 the gaps or quietly corrupts what was already there.
