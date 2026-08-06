@@ -19,8 +19,8 @@
 
 ### About me
 
-I build the crawlers and scheduled jobs that pull data in, the checks that keep it
-correct as sources change, and the APIs and apps that serve it.
+I build the crawlers and scheduled jobs that pull data in, the tests that ensure the
+data is valid, and the APIs and apps that serve it.
 
 Most of my work starts with a source that doesn't want to hand anything over. A
 government filing portal with a reporting lag. A price API that degrades quietly
