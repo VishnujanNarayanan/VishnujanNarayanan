@@ -215,5 +215,7 @@ Multi-task CNN predicting age bracket and gender from a face photo, trained on 1
 ---
 
 <div align="center">
-  <i>Design for the second run.</i>
+  <i>Data in. Products out.</i>
+  <br /><br />
+  Open to data engineering roles — <b>narayanan.vishnujan@gmail.com</b>
 </div>
